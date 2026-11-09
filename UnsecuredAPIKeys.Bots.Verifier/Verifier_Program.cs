@@ -427,8 +427,10 @@ namespace UnsecuredAPIKeys.Bots.Verifier
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<DBContext>();
-                    continuousMode = bool.Parse((await dbContext.ApplicationSettings
+                    var dbContinuous = bool.Parse((await dbContext.ApplicationSettings
                         .SingleOrDefaultAsync(x => x.Key == "VerifierContinuousMode", _cancellationTokenSource.Token))?.Value ?? "false");
+                    continuousMode = dbContinuous ||
+                        string.Equals(Environment.GetEnvironmentVariable("VERIFIER_CONTINUOUS_MODE"), "true", StringComparison.OrdinalIgnoreCase);
                 }
 
                 if (continuousMode)

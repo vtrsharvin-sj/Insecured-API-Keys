@@ -54,6 +54,7 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Production
       CONNECTION_STRING: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+      VERIFIER_CONTINUOUS_MODE: ${VERIFIER_CONTINUOUS_MODE:-true}
 
   scraper:
     build:
@@ -67,6 +68,7 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Production
       CONNECTION_STRING: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+      SCRAPER_CONTINUOUS_MODE: ${SCRAPER_CONTINUOUS_MODE:-true}
 
 volumes:
   postgres-data:

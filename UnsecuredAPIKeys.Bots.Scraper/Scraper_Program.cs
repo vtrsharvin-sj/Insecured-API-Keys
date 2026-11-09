@@ -152,8 +152,10 @@ namespace UnsecuredAPIKeys.Bots.Scraper
             using (var scope = serviceProvider.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<DBContext>();
-                continuousMode = bool.Parse((await dbContext.ApplicationSettings
+                var dbContinuous = bool.Parse((await dbContext.ApplicationSettings
                     .SingleOrDefaultAsync(x => x.Key == "ScraperContinuousMode", _cancellationTokenSource.Token))?.Value ?? "false");
+                continuousMode = dbContinuous ||
+                    string.Equals(Environment.GetEnvironmentVariable("SCRAPER_CONTINUOUS_MODE"), "true", StringComparison.OrdinalIgnoreCase);
             }
 
             if (continuousMode)
@@ -226,7 +228,8 @@ namespace UnsecuredAPIKeys.Bots.Scraper
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<DBContext>();
 
-                bool canRunScraper = bool.Parse(((await dbContext.ApplicationSettings.SingleOrDefaultAsync(x => x.Key == "AllowScraper"))!).Value);
+                var allowScraperSetting = await dbContext.ApplicationSettings.SingleOrDefaultAsync(x => x.Key == "AllowScraper");
+                bool canRunScraper = bool.TryParse(allowScraperSetting?.Value, out var parsedAllowScraper) ? parsedAllowScraper : false;
                 if (!canRunScraper)
                 {
                     logger?.LogInformation("Scraper is disabled via ApplicationSettings (AllowScraper). Skipping cycle.");
