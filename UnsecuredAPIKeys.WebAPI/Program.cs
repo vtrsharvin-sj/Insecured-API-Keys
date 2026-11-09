@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -38,7 +39,7 @@ namespace UnsecuredAPIKeys.WebAPI
                 {
                     document.Info = new()
                     {
-                        Title = "UnsecuredAPIKeys API",
+                        Title = "Insecured API Keys API",
                         Version = "v1",
                         Description = "API for managing and retrieving exposed API keys"
                     };
@@ -132,6 +133,13 @@ namespace UnsecuredAPIKeys.WebAPI
             }
 
             app.UseCors("AllowedOrigins");
+
+            // Trust the X-Forwarded-* headers set by nginx so real client IPs
+            // are used for rate limiting rather than the docker bridge IP.
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
             
             // Enable response compression
             app.UseResponseCompression();
@@ -160,6 +168,10 @@ namespace UnsecuredAPIKeys.WebAPI
 
             app.MapControllers();
             app.MapHub<StatsHub>("/hubs/stats");
+
+            // Lightweight health-check used by docker-compose and load balancers
+            app.MapGet("/health", () => Results.Ok(new { status = "healthy", utc = DateTime.UtcNow }))
+               .ExcludeFromDescription();
 
             // Initialize display count service
             var displayCountService = app.Services.GetRequiredService<IDisplayCountService>();

@@ -20,8 +20,8 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     integrations: [],
     tracesSampleRate: parseFloat(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE || '0.1'),
     tracePropagationTargets: [
-      process.env.NEXT_PUBLIC_API_URL || "https://api.unsecuredapikeys.com",
-      "https://unsecuredapikeys.com",
+      process.env.NEXT_PUBLIC_API_URL || "https://api.insecuredapikeys.com",
+      "https://insecuredapikeys.com",
       "localhost",
     ],
     // Session Replay
@@ -40,27 +40,16 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter()
 
   useEffect(() => {
-    console.log('[GA] Initializing page tracking system')
-    
-    // Track initial page view
     const handleRouteChange = (url: string) => {
-      console.log(`[GA] Route changed to: ${url}`)
-      trackPageView(url)
-    }
+      trackPageView(url);
+    };
 
-    // Track the current page on mount
-    console.log(`[GA] Tracking initial page: ${router.asPath}`)
-    handleRouteChange(router.asPath)
+    handleRouteChange(router.asPath);
+    router.events.on('routeChangeComplete', handleRouteChange);
 
-    // Track route changes
-    router.events.on('routeChangeComplete', handleRouteChange)
-    console.log('[GA] Route change listener attached')
-
-    // Cleanup function to remove event listener
     return () => {
-      console.log('[GA] Cleaning up route change listener')
-      router.events.off('routeChangeComplete', handleRouteChange)
-    }
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
   }, [router.events, router.asPath])
 
   return (

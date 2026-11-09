@@ -36,27 +36,31 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
       SCRAPER_SERVICE_NAME: ${SCRAPER_SERVICE_NAME:-api-scraper}
       VERIFIER_SERVICE_NAME: ${VERIFIER_SERVICE_NAME:-api-verifier}
-      # Any public domains port-forwarded to the site (comma separated); same-origin always allowed
       ALLOWED_REFERRERS: ${ALLOWED_REFERRERS:-}
-      # Read-only socket so /Status/GetStatus can report on the worker containers
+      PRODUCTION_DOMAIN: ${PRODUCTION_DOMAIN:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "${API_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   ui:
     build:
       context: .
       dockerfile: UnsecuredAPIKeys.UI/Dockerfile
       args:
-        # Inside the container the UI talks to the API through the nginx proxy
         NEXT_PUBLIC_API_URL: /apiproxy
     container_name: api-ui
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      # Single origin: nginx serves the UI and proxies /apiproxy/* to the API
       - "${UI_PORT:-8080}:3000"
 
   verifier:

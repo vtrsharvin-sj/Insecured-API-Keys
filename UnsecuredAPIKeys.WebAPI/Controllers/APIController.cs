@@ -1,5 +1,6 @@
 using Humanizer;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -58,8 +59,12 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
         [HttpPost("DebugActiveUsers")]
         public async Task<ActionResult<object>> DebugActiveUsers()
         {
+            // Only allow in Development to avoid exposing internal state in production
+            if (!HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
+                return NotFound();
+
             await activeUserService.ValidateConnectionsAsync();
-            return Ok(new { 
+            return Ok(new {
                 ActiveUserCount = activeUserService.ActiveUserCount,
                 Message = "Validation triggered. Check logs for details."
             });
