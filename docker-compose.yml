@@ -33,6 +33,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       CONNECTION_STRING: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__DefaultConnection: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
       SCRAPER_SERVICE_NAME: ${SCRAPER_SERVICE_NAME:-api-scraper}
       VERIFIER_SERVICE_NAME: ${VERIFIER_SERVICE_NAME:-api-verifier}
     ports:
