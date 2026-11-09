@@ -1,23 +1,30 @@
 ﻿using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
 using UnsecuredAPIKeys.WebAPI.Controllers;
 
 namespace UnsecuredAPIKeys.WebAPI
 {
     public interface ISystemdService
     {
-        Task<StatusController.SystemServicesStatus> GetServicesStatusAsync();
+        Task<StatusController.SystemServicesStatus> GetServicesStatusAsync(bool includeLogs = false, int logLines = 50);
     }
 
     public class SystemdService(ILogger<SystemdService> logger) : ISystemdService
     {
-        public async Task<StatusController.SystemServicesStatus> GetServicesStatusAsync()
+        private const string DockerSocketPath = "/var/run/docker.sock";
+
+        public async Task<StatusController.SystemServicesStatus> GetServicesStatusAsync(bool includeLogs = false, int logLines = 50)
         {
             var status = new StatusController.SystemServicesStatus();
 
             try
             {
-                status.ScraperService = await GetServiceStatusAsync(Environment.GetEnvironmentVariable("SCRAPER_SERVICE_NAME") ?? "api-scraper");
-                status.VerifierService = await GetServiceStatusAsync(Environment.GetEnvironmentVariable("VERIFIER_SERVICE_NAME") ?? "api-verifier");
+                status.ScraperService = await GetServiceStatusAsync(
+                    Environment.GetEnvironmentVariable("SCRAPER_SERVICE_NAME") ?? "api-scraper", includeLogs, logLines);
+                status.VerifierService = await GetServiceStatusAsync(
+                    Environment.GetEnvironmentVariable("VERIFIER_SERVICE_NAME") ?? "api-verifier", includeLogs, logLines);
             }
             catch (Exception ex)
             {
@@ -28,22 +35,19 @@ namespace UnsecuredAPIKeys.WebAPI
             return status;
         }
 
-        private async Task<StatusController.ServiceStatus> GetServiceStatusAsync(string serviceName)
+        private async Task<StatusController.ServiceStatus> GetServiceStatusAsync(string serviceName, bool includeLogs = false, int logLines = 50)
         {
             var status = new StatusController.ServiceStatus
             {
                 ServiceName = serviceName
             };
 
-            // Prefer Docker container status (Docker Compose deployments), fall back to systemd.
-            var (dockerStatus, dockerDescription, dockerLastRunTime) = await GetDockerServiceStatusAsync(serviceName);
+            // Prefer the Docker Engine API (containers, works inside containers with the
+            // docker socket mounted), then systemd (bare-metal deployments).
+            var dockerStatus = await GetDockerServiceStatusAsync(serviceName);
             if (dockerStatus != null)
             {
-                status.Status = dockerStatus;
-                status.IsActive = dockerStatus.Contains("Up", StringComparison.OrdinalIgnoreCase);
-                status.Description = dockerDescription ?? $"Docker container: {serviceName}";
-                status.LastRunTime = dockerLastRunTime ?? string.Empty;
-                return status;
+                return dockerStatus;
             }
 
             try
@@ -72,6 +76,16 @@ namespace UnsecuredAPIKeys.WebAPI
                 {
                     status.LastRunTime = journalOutput.Split(' ')[0] ?? string.Empty;
                 }
+
+                // If logs are requested, get them
+                if (includeLogs)
+                {
+                    status.RecentLogs = await GetServiceLogsAsync(serviceName, logLines);
+                    if (status.RecentLogs.Count == 0)
+                    {
+                        status.RecentLogs = await GetServiceLogsSimpleAsync(serviceName, logLines);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -83,41 +97,66 @@ namespace UnsecuredAPIKeys.WebAPI
             return status;
         }
 
-        private async Task<(string? status, string? description, string? lastRunTime)> GetDockerServiceStatusAsync(string containerName)
+        private async Task<StatusController.ServiceStatus?> GetDockerServiceStatusAsync(string containerName)
         {
             try
             {
-                var (_, exitCode) = await RunCommandAsync("docker", "version --format '{{.Server.Version}}'", useSudo: false, timeoutMs: 5000);
-                // Exit code != 0 usually means the docker daemon/socket is unavailable.
-                if (exitCode != 0)
+                if (!File.Exists(DockerSocketPath))
                 {
-                    return (null, null, null);
+                    return null;
                 }
 
-                var (psOutput, _) = await RunCommandAsync("docker",
-                    $"ps -a --filter name=^/{containerName}$ --format \"{{{{.Names}}}}|{{{{.Status}}}}\"",
-                    useSudo: false, timeoutMs: 5000);
-
-                var line = psOutput.Trim();
-                if (string.IsNullOrEmpty(line))
+                using var client = CreateDockerSocketClient();
+                var response = await client.GetAsync($"http://dockerhost/containers/{Uri.EscapeDataString(containerName)}/json");
+                if (!response.IsSuccessStatusCode)
                 {
-                    return ($"Not found: no container named '{containerName}'", $"Docker container: {containerName}", null);
+                    return null;
                 }
 
-                var parts = line.Split('|');
-                var containerStatus = parts.Length > 1 ? parts[1] : "unknown";
+                await using var stream = await response.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
 
-                var (startedAt, _) = await RunCommandAsync("docker",
-                    $"inspect --format \"{{{{.State.StartedAt}}}}\" {containerName}",
-                    useSudo: false, timeoutMs: 5000);
+                var root = doc.RootElement;
+                var stateObj = root.GetProperty("State");
+                var isRunning = stateObj.TryGetProperty("Running", out var running) && running.GetBoolean();
+                var statusText = stateObj.TryGetProperty("Status", out var statusEl) ? statusEl.GetString() ?? string.Empty : string.Empty;
+                var lastRunTime = stateObj.TryGetProperty("StartedAt", out var startedEl) ? startedEl.GetString() ?? string.Empty : string.Empty;
 
-                return (containerStatus, $"Docker container: {containerName}", startedAt.Trim());
+                return new StatusController.ServiceStatus
+                {
+                    ServiceName = containerName,
+                    Status = statusText,
+                    IsActive = isRunning,
+                    Description = $"Docker container: {containerName}",
+                    LastRunTime = lastRunTime
+                };
             }
-            catch
+            catch (Exception ex)
             {
-                // Docker not installed or not accessible - use systemd fallback.
-                return (null, null, null);
+                // Docker socket unavailable (bare-metal systemd deployment) - not an error.
+                logger.LogDebug(ex, "Docker status unavailable for {Container}, falling back to systemd", containerName);
+                return null;
             }
+        }
+
+        private static HttpClient CreateDockerSocketClient()
+        {
+            var handler = new SocketsHttpHandler();
+            handler.ConnectCallback = async (context, cancellationToken) =>
+            {
+                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                try
+                {
+                    await socket.ConnectAsync(new UnixDomainSocketEndPoint(DockerSocketPath), cancellationToken);
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+            };
+            return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
         }
 
         private async Task<(string output, int exitCode)> RunCommandAsync(string fileName, string arguments, bool useSudo = false, int timeoutMs = 15000)
@@ -139,7 +178,7 @@ namespace UnsecuredAPIKeys.WebAPI
                 return (string.Empty, -1);
             }
 
-            var output = await process.StandardOutput.ReadToEndAsync();
+            var outputTask = process.StandardOutput.ReadToEndAsync();
             var timeoutTask = Task.Run(() =>
             {
                 try
@@ -149,9 +188,110 @@ namespace UnsecuredAPIKeys.WebAPI
                 catch { /* process already exited or was disposed */ }
             });
             await timeoutTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs + 1000));
-            await process.WaitForExitAsync();
+            var output = await outputTask;
 
             return (output, process.ExitCode);
+        }
+
+        private async Task<List<StatusController.LogEntry>> GetServiceLogsAsync(string serviceName, int lines)
+        {
+            var logs = new List<StatusController.LogEntry>();
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "sudo",
+                    Arguments = $"journalctl -u {serviceName}.service --no-pager -n {lines} --output=json",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var process = new Process { StartInfo = startInfo };
+                process.Start();
+
+                var errorOutput = await process.StandardError.ReadToEndAsync();
+                if (!string.IsNullOrEmpty(errorOutput))
+                {
+                    logger.LogWarning("Error from journalctl: {Error}", errorOutput);
+                }
+
+                using var reader = process.StandardOutput;
+                string? line;
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            var logEntry = JsonSerializer.Deserialize<StatusController.LogEntry>(line);
+                            if (logEntry != null)
+                            {
+                                logs.Add(logEntry);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning("Failed to parse log entry: {Line}, Error: {Error}", line, ex.Message);
+                        logs.Add(new StatusController.LogEntry { MESSAGE = $"[Parse Error] {line}" });
+                    }
+                }
+
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode != 0)
+                {
+                    logger.LogWarning("journalctl exited with code {ExitCode}", process.ExitCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting logs for service {ServiceName}", serviceName);
+            }
+
+            return logs;
+        }
+
+        // Fallback that gets logs in a simpler format
+        private async Task<List<StatusController.LogEntry>> GetServiceLogsSimpleAsync(string serviceName, int lines)
+        {
+            var logs = new List<StatusController.LogEntry>();
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "sudo",
+                    Arguments = $"journalctl -u {serviceName}.service --no-pager -n {lines}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var process = new Process { StartInfo = startInfo };
+                process.Start();
+
+                var output = await process.StandardOutput.ReadToEndAsync();
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    foreach (var line in output.Split('\n'))
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            logs.Add(new StatusController.LogEntry { MESSAGE = line.Trim() });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting logs for service {ServiceName}", serviceName);
+            }
+
+            return logs;
         }
     }
 }

@@ -36,6 +36,9 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
       SCRAPER_SERVICE_NAME: ${SCRAPER_SERVICE_NAME:-api-scraper}
       VERIFIER_SERVICE_NAME: ${VERIFIER_SERVICE_NAME:-api-verifier}
+    # Read-only socket so /Status/GetStatus can report on the worker containers
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "${API_PORT:-8080}:8080"
 
