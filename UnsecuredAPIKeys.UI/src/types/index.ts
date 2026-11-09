@@ -20,16 +20,16 @@ export interface ApiKeyReference {
 }
 
 export interface ApiKey {
-  id: number; // Added missing id field
+  id: number;
   apiType: string;
   apiKey: string;
   timesDisplayed: number;
-  status: "Valid" | "Invalid" | "Unverified" | "NoLongerWorking" | "Removed" | "FlaggedForRemoval" | "Error" | "ValidNoCredits"; // All possible API status values
-  lastValidUTC: string; // ISO date string
-  lastCheckedUTC?: string; // ISO date string - when the key was last checked
-  firstFoundUTC: string; // ISO date string
-  lastFoundUTC?: string; // ISO date string - when the key was last found
-  searchProvider?: number; // Search provider ID
+  status: number; // ApiStatusEnum integer: -99=Unverified, 1=Valid, 0=Invalid, 3=Removed, 4=Flagged, 5=Fixed, 6=Error, 7=ValidNoCredits
+  lastValidUTC: string;
+  lastCheckedUTC?: string;
+  firstFoundUTC: string;
+  lastFoundUTC?: string;
+  searchProvider?: number;
   references: ApiKeyReference[];
 }
 
@@ -37,7 +37,8 @@ export interface KeyStats {
   totalNumberOfKeys: number;
   numberOfValidKeys: number;
   newKeysFoundToday: number;
-  mostRecentFind: string; // Or could be a date string depending on format
+  totalFixedKeys: number;
+  mostRecentFind: string;
 }
 
 export interface ApiKeyType {

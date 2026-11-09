@@ -518,10 +518,10 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
             if (pageSize < 1) pageSize = 50;
             if (pageSize > 100) pageSize = 100; // Cap at 100 for performance
 
-            // Build query
+            // Build query — show all keys (verified or not); exclude only Removed
             var query = dbContext.APIKeys
                 .Include(x => x.References)
-                .Where(s => s.Status == ApiStatusEnum.Valid);
+                .Where(s => s.Status != ApiStatusEnum.Removed);
 
             // Add type filter if specified
             if (type.HasValue)
@@ -532,9 +532,9 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
             // Get total count for pagination metadata
             var totalCount = await query.CountAsync();
 
-            // Apply pagination
+            // Apply pagination — newest first so fresh finds appear at the top
             var items = await query
-                .OrderBy(x => x.Id) // Ensure consistent ordering
+                .OrderByDescending(x => x.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
