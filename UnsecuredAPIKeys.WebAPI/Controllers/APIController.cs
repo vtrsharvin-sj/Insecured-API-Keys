@@ -507,7 +507,7 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
 
         [HttpGet("GetAllValidKeys")]
         [AllowedReferrers]
-        [RateLimit(10)]
+        [RateLimit(500)]
         public async Task<ActionResult<PaginatedResponse<APIKey>>> GetAllValidKeys(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50,
