@@ -158,7 +158,7 @@ export default function IndexPage() {
   return (
     <DefaultLayout>
       <Head>
-        <title>Keys Finder | Unsecured API Keys</title>
+        <title>Keys Finder | Insecured API Keys</title>
         <meta name="description" content="Browse verified API keys found in public code." />
       </Head>
       <section className="py-10">

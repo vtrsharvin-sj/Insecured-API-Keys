@@ -26,7 +26,7 @@ export const Navbar = () => {
         <NavbarBrand className="gap-3 max-w-fit">
           <NextLink href="/" className="flex justify-start items-center gap-1">
             <Logo />
-            <p className="font-bold text-inherit">Unsecured API Keys</p>
+            <p className="font-bold text-inherit">Insecured API Keys</p>
           </NextLink>
         </NavbarBrand>
         <div className="hidden lg:flex gap-4 justify-start ml-2">

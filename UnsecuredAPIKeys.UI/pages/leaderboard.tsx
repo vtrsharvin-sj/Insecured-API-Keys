@@ -96,33 +96,33 @@ export default function LeaderboardPage() {
   return (
     <>
       <Head>
-        <title>Leaderboard - Unsecured API Keys</title>
+        <title>Leaderboard - Insecured API Keys</title>
         <meta
           name="description"
           content="See who are the top contributors helping to secure the web by reporting exposed API keys. Hall of Fame for security heroes and biggest snitches."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="keywords" content="leaderboard, security heroes, API key reports, GitHub security, cybersecurity contributors, code security" />
-        <link rel="canonical" href="https://unsecuredapikeys.com/leaderboard/" />
+        <link rel="canonical" href="https://InsecuredAPIKeys.com/leaderboard/" />
         
         {/* Open Graph Meta Tags */}
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Unsecured API Keys" />
-        <meta property="og:title" content="Leaderboard - Unsecured API Keys" />
+        <meta property="og:site_name" content="Insecured API Keys" />
+        <meta property="og:title" content="Leaderboard - Insecured API Keys" />
         <meta property="og:description" content="See who are the top contributors helping to secure the web by reporting exposed API keys. Hall of Fame for security heroes." />
-        <meta property="og:url" content="https://unsecuredapikeys.com/leaderboard/" />
-        <meta property="og:image" content="https://unsecuredapikeys.com/og-image.png" />
+        <meta property="og:url" content="https://InsecuredAPIKeys.com/leaderboard/" />
+        <meta property="og:image" content="https://InsecuredAPIKeys.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="Leaderboard - Security Heroes at Unsecured API Keys" />
+        <meta property="og:image:alt" content="Leaderboard - Security Heroes at Insecured API Keys" />
         <meta property="og:locale" content="en_US" />
         
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Leaderboard - Unsecured API Keys" />
+        <meta name="twitter:title" content="Leaderboard - Insecured API Keys" />
         <meta name="twitter:description" content="See who are the top contributors helping to secure the web by reporting exposed API keys." />
-        <meta name="twitter:image" content="https://unsecuredapikeys.com/og-image.png" />
-        <meta name="twitter:image:alt" content="Leaderboard - Security Heroes at Unsecured API Keys" />
+        <meta name="twitter:image" content="https://InsecuredAPIKeys.com/og-image.png" />
+        <meta name="twitter:image:alt" content="Leaderboard - Security Heroes at Insecured API Keys" />
         
         {/* Structured Data - Leaderboard */}
         <script
@@ -132,7 +132,7 @@ export default function LeaderboardPage() {
               "@context": "https://schema.org",
               "@type": "WebPage",
               "name": "Security Heroes Leaderboard",
-              "url": "https://unsecuredapikeys.com/leaderboard",
+              "url": "https://InsecuredAPIKeys.com/leaderboard",
               "description": "See who are the top contributors helping to secure the web by reporting exposed API keys.",
               "mainEntity": {
                 "@type": "ItemList",

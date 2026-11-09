@@ -53,33 +53,33 @@ export default function PricingPage() {
   return (
     <>
       <Head>
-        <title>Pricing - Unsecured API Keys</title>
+        <title>Pricing - Insecured API Keys</title>
         <meta
           name="description"
           content="Our pricing is simple: completely free! Help secure the web without any cost. No hidden fees, no premium tiers - just free API key security tools."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="keywords" content="pricing, free security tools, API key security, cost, GitHub security, free cybersecurity, developer tools" />
-        <link rel="canonical" href="https://unsecuredapikeys.com/pricing/" />
+        <link rel="canonical" href="https://InsecuredAPIKeys.com/pricing/" />
 
         {/* Open Graph Meta Tags */}
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Unsecured API Keys" />
-        <meta property="og:title" content="Pricing - Unsecured API Keys" />
+        <meta property="og:site_name" content="Insecured API Keys" />
+        <meta property="og:title" content="Pricing - Insecured API Keys" />
         <meta property="og:description" content="Our pricing is simple: completely free! Help secure the web without any cost. No hidden fees, no premium tiers." />
-        <meta property="og:url" content="https://unsecuredapikeys.com/pricing/" />
-        <meta property="og:image" content="https://unsecuredapikeys.com/og-image.png" />
+        <meta property="og:url" content="https://InsecuredAPIKeys.com/pricing/" />
+        <meta property="og:image" content="https://InsecuredAPIKeys.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="Pricing - Free Security Tools at Unsecured API Keys" />
+        <meta property="og:image:alt" content="Pricing - Free Security Tools at Insecured API Keys" />
         <meta property="og:locale" content="en_US" />
 
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Pricing - Unsecured API Keys" />
+        <meta name="twitter:title" content="Pricing - Insecured API Keys" />
         <meta name="twitter:description" content="Our pricing is simple: completely free! Help secure the web without any cost." />
-        <meta name="twitter:image" content="https://unsecuredapikeys.com/og-image.png" />
-        <meta name="twitter:image:alt" content="Pricing - Free Security Tools at Unsecured API Keys" />
+        <meta name="twitter:image" content="https://InsecuredAPIKeys.com/og-image.png" />
+        <meta name="twitter:image:alt" content="Pricing - Free Security Tools at Insecured API Keys" />
 
         {/* Structured Data - Pricing */}
         <script
@@ -88,12 +88,12 @@ export default function PricingPage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebPage",
-              "name": "Pricing - Unsecured API Keys",
-              "url": "https://unsecuredapikeys.com/pricing",
+              "name": "Pricing - Insecured API Keys",
+              "url": "https://InsecuredAPIKeys.com/pricing",
               "description": "Our pricing is simple: completely free! Help secure the web without any cost.",
               "mainEntity": {
                 "@type": "Product",
-                "name": "Unsecured API Keys Security Tool",
+                "name": "Insecured API Keys Security Tool",
                 "description": "Free tool to find and report exposed API keys in public repositories",
                 "offers": {
                   "@type": "Offer",

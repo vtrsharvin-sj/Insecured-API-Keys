@@ -8,7 +8,7 @@ export const Logo: React.FC<IconSvgProps> = ({
   ...props
 }) => (
   <svg
-    aria-label="Unsecured API Keys Logo"
+    aria-label="Insecured API Keys Logo"
     className="size-6"
     fill="none"
     role="img"

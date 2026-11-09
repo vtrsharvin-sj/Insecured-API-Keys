@@ -8,11 +8,11 @@ export default function Document() {
         <meta name="robots" content="index, follow" />
         <meta name="googlebot" content="index, follow" />
         <meta name="language" content="English" />
-        <meta name="author" content="Unsecured API Keys" />
+        <meta name="author" content="Insecured API Keys" />
         <meta name="referrer" content="origin-when-cross-origin" />
         
         {/* Performance Optimization - Resource Hints */}
-        <link rel="preconnect" href="https://api.unsecuredapikeys.com" />
+        <link rel="preconnect" href="https://api.insecuredapikeys.com" />
         <link rel="dns-prefetch" href="https://github.com" />
         <link rel="dns-prefetch" href="https://ui-avatars.com" />
         

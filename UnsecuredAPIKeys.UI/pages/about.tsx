@@ -11,33 +11,33 @@ export default function AboutPage() {
   return (
     <>
       <Head>
-        <title>About - Unsecured API Keys</title>
+        <title>About - Insecured API Keys</title>
         <meta
           name="description"
           content="Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories. Making cybersecurity accessible to everyone."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="keywords" content="about, mission, cybersecurity, API security, GitHub security, code vulnerability, security research" />
-        <link rel="canonical" href="https://unsecuredapikeys.com/about/" />
+        <link rel="canonical" href="https://InsecuredAPIKeys.com/about/" />
         
         {/* Open Graph Meta Tags */}
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Unsecured API Keys" />
-        <meta property="og:title" content="About - Unsecured API Keys" />
+        <meta property="og:site_name" content="Insecured API Keys" />
+        <meta property="og:title" content="About - Insecured API Keys" />
         <meta property="og:description" content="Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories." />
-        <meta property="og:url" content="https://unsecuredapikeys.com/about/" />
-        <meta property="og:image" content="https://unsecuredapikeys.com/og-image.png" />
+        <meta property="og:url" content="https://InsecuredAPIKeys.com/about/" />
+        <meta property="og:image" content="https://InsecuredAPIKeys.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="About Unsecured API Keys - Security Tool for Developers" />
+        <meta property="og:image:alt" content="About Insecured API Keys - Security Tool for Developers" />
         <meta property="og:locale" content="en_US" />
         
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="About - Unsecured API Keys" />
+        <meta name="twitter:title" content="About - Insecured API Keys" />
         <meta name="twitter:description" content="Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories." />
-        <meta name="twitter:image" content="https://unsecuredapikeys.com/og-image.png" />
-        <meta name="twitter:image:alt" content="About Unsecured API Keys - Security Tool for Developers" />
+        <meta name="twitter:image" content="https://InsecuredAPIKeys.com/og-image.png" />
+        <meta name="twitter:image:alt" content="About Insecured API Keys - Security Tool for Developers" />
         
         {/* Structured Data - About Page */}
         <script
@@ -46,14 +46,14 @@ export default function AboutPage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "AboutPage",
-              "name": "About Unsecured API Keys",
-              "url": "https://unsecuredapikeys.com/about",
+              "name": "About Insecured API Keys",
+              "url": "https://InsecuredAPIKeys.com/about",
               "description": "Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories.",
               "mainEntity": {
                 "@type": "Organization",
-                "name": "Unsecured API Keys",
+                "name": "Insecured API Keys",
                 "description": "A security tool that helps developers find and report exposed API keys in public repositories.",
-                "url": "https://unsecuredapikeys.com"
+                "url": "https://InsecuredAPIKeys.com"
               }
             })
           }}

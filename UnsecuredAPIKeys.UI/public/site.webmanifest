@@ -1,6 +1,6 @@
 {
-  "name": "Unsecured API Keys",
-  "short_name": "UnsecuredAPIKeys",
+  "name": "Insecured API Keys",
+  "short_name": "InsecuredAPIKeys",
   "description": "Help developers avoid that awkward conversation with their boss. Find and report exposed API keys in public GitHub repositories.",
   "icons": [
     {

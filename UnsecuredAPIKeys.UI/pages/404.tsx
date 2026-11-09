@@ -22,7 +22,7 @@ export default function Custom404() {
   return (
     <DefaultLayout>
       <Head>
-        <title>Page Not Found - UnsecuredAPIKeys</title>
+        <title>Page Not Found - Insecured API Keys</title>
         <meta name="description" content="Page not found. Redirecting to home page." />
       </Head>
       
