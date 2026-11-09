@@ -301,7 +301,7 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
         public async Task<ActionResult<List<ApiTypeCountDto>>> GetKeyTypes()
         {
             var typeCounts = await dbContext.APIKeys
-                .Where(x => x.Status == ApiStatusEnum.Valid)
+                .Where(x => x.Status != ApiStatusEnum.Removed)
                 .GroupBy(x => x.ApiType)
                 .Select(g => new ApiTypeCountDto
                 {
