@@ -17,6 +17,8 @@ RUN dotnet publish "UnsecuredAPIKeys.WebAPI.csproj" -c $BUILD_CONFIGURATION -o /
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
+# Install curl for the docker-compose healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
 
 # Plain HTTP by default; put a reverse proxy in front for TLS (see docs/DEPLOYMENT_LINUX.md)
