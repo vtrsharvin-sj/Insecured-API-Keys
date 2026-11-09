@@ -15,9 +15,7 @@ build/
 
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
-
-# Logs
+next-env.d.ts# Logs
 logs
 *.log
 npm-debug.log*
@@ -98,7 +96,6 @@ dist
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
-
 # yarn v2
 .yarn/cache
 .yarn/unplugged
@@ -119,8 +116,6 @@ dist
 
 # Package manager lock files
 pnpm-lock.yaml
-yarn.lock
-package-lock.json
 bun.lockb
 
 # Deployment platforms

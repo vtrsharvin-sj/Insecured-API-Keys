@@ -9,8 +9,8 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
-COPY UnsecuredAPIKeys.UI/package.json UnsecuredAPIKeys.UI/
-RUN cd UnsecuredAPIKeys.UI && npm install --legacy-peer-deps --no-audit --no-fund
+COPY UnsecuredAPIKeys.UI/package.json UnsecuredAPIKeys.UI/package-lock.json* UnsecuredAPIKeys.UI/
+RUN cd UnsecuredAPIKeys.UI && npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 COPY UnsecuredAPIKeys.UI/ UnsecuredAPIKeys.UI/
 RUN cd UnsecuredAPIKeys.UI && npm run build:simple
 
