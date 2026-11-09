@@ -48,7 +48,8 @@ $EDITOR .env                     # set POSTGRES_PASSWORD etc.
 ./deploy/deploy.sh build
 
 # 3. Verify
-curl http://localhost:8080/api/status
+curl -s http://localhost:8080 > /dev/null        # UI (nginx)  - port-forward THIS to your URL
+curl -s http://localhost:8081/Status/GetStatus   # API direct
 ```
 
 The API applies all EF Core migrations on first boot; PostgreSQL data is persisted in a Docker volume (`postgres-data`).
@@ -56,9 +57,12 @@ The API applies all EF Core migrations on first boot; PostgreSQL data is persist
 | Service   | Container name | Notes |
 |-----------|----------------|-------|
 | db        | `api-db`       | PostgreSQL 15, health-checked |
-| api       | `api`          | WebAPI on port `8080` (host port via `API_PORT`) |
-| verifier  | `api-verifier` | background key validator |
-| scraper   | `api-scraper`  | background key discovery worker |
+| ui        | `api-ui`       | Static Next.js export via nginx on port `UI_PORT` (default **8080**) |
+| api       | `api`          | WebAPI on host port `API_PORT` (default **8081**) |
+| verifier  | `api-verifier` | background key validator (continuous mode) |
+| scraper   | `api-scraper`  | background key discovery worker (continuous mode) |
+
+**Single-URL deployment:** the `ui` service serves the whole site on one port and reverse-proxies the API at `/apiproxy/*` on the same origin (including the `/hubs/stats` SignalR websocket). Port-forward `UI_PORT` and you have the full URL; the API always accepts same-origin requests regardless of the final domain. If you call the API directly (not through the proxy) from another domain, add it to `ALLOWED_REFERRERS`.
 
 Useful commands:
 
@@ -83,11 +87,13 @@ All runtime configuration is environment-variable based:
 |---|---|---|---|
 | `CONNECTION_STRING` | api / bots | built-in localhost string | PostgreSQL connection |
 | `POSTGRES_PASSWORD` | compose db/api/bots | `postgres` | database password inside the compose stack |
-| `API_PORT` | compose | `8080` | host port for the API |
+| `UI_PORT` | compose | `8080` | host port for the full site (UI + API proxy) — **port-forward this one** |
+| `API_PORT` | compose | `8081` | host port for direct access to the raw API |
 | `ASPNETCORE_ENVIRONMENT` | api | `Production` | `Development` enables Swagger at `/scalar/v1` |
 | `SCRAPER_SERVICE_NAME` | api | `api-scraper` | container name used by the /status endpoint |
 | `VERIFIER_SERVICE_NAME` | api | `api-verifier` | container name used by the /status endpoint |
-| `PRODUCTION_DOMAIN` | api | – | adds CORS origin `https://<domain>` |
+| `ALLOWED_REFERRERS` | api | – | extra domains allowed to call the API directly (same-origin always allowed) |
+| `PRODUCTION_DOMAIN` | api | – | adds CORS origin `https://<domain>` (only needed for direct cross-origin browser use) |
 | `FORCE_HTTPS_REDIRECT` | api | unset | set to enable HTTPS redirection (behind your own TLS proxy) |
 
 Rate limiting is per-IP, configurable through the `RateLimit` row in the `ApplicationSettings` table (default 5 requests/hour).
