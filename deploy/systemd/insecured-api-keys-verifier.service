@@ -1,0 +1,19 @@
+# System template units for the worker services (Linux alternative to Docker Compose).
+
+[Unit]
+Description=Insecured API Keys Verification Worker
+After=network.target insecured-api-keys-api.service
+Wants=insecured-api-keys-api.service
+
+[Service]
+Type=exec
+User=apikeys
+WorkingDirectory=/opt/insecured-api-keys/UnsecuredAPIKeys.Bots.Verifier
+Environment=DOTNET_ENVIRONMENT=Production
+Environment=CONNECTION_STRING=Host=localhost;Database=UnsecuredAPIKeys;Username=postgres;Password=change_me
+ExecStart=/usr/bin/dotnet /opt/insecured-api-keys/UnsecuredAPIKeys.Bots.Verifier/UnsecuredAPIKeys.Bots.Verifier.dll
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

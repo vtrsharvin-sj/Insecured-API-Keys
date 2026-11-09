@@ -1,0 +1,23 @@
+# Bare-metal systemd units (alternative to Docker Compose).
+# Copy to /etc/systemd/system/ and edit User/WorkingDirectory/Environment as needed.
+
+[Unit]
+Description=Insecured API Keys WebAPI
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User=apikeys
+WorkingDirectory=/opt/insecured-api-keys/UnsecuredAPIKeys.WebAPI
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:8080
+Environment=CONNECTION_STRING=Host=localhost;Database=UnsecuredAPIKeys;Username=postgres;Password=change_me
+Environment=SCRAPER_SERVICE_NAME=api-scraper
+Environment=VERIFIER_SERVICE_NAME=api-verifier
+ExecStart=/usr/bin/dotnet /opt/insecured-api-keys/UnsecuredAPIKeys.WebAPI/UnsecuredAPIKeys.WebAPI.dll
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

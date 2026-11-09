@@ -1,0 +1,68 @@
+# Linux-only service stack for Insecured API Keys.
+# Usage:
+#   cp .env.example .env          # then edit passwords/tokens
+#   docker compose up -d --build
+name: insecureedapikeys
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: api-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: UnsecuredAPIKeys
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d UnsecuredAPIKeys"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: UnsecuredAPIKeys.WebAPI/Dockerfile
+    container_name: api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      CONNECTION_STRING: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+      SCRAPER_SERVICE_NAME: ${SCRAPER_SERVICE_NAME:-api-scraper}
+      VERIFIER_SERVICE_NAME: ${VERIFIER_SERVICE_NAME:-api-verifier}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  verifier:
+    build:
+      context: .
+      dockerfile: UnsecuredAPIKeys.Bots.Verifier/Dockerfile
+    container_name: ${VERIFIER_SERVICE_NAME:-api-verifier}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      CONNECTION_STRING: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+
+  scraper:
+    build:
+      context: .
+      dockerfile: UnsecuredAPIKeys.Bots.Scraper/Dockerfile
+    container_name: ${SCRAPER_SERVICE_NAME:-api-scraper}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      CONNECTION_STRING: "Host=db;Database=UnsecuredAPIKeys;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+
+volumes:
+  postgres-data:
