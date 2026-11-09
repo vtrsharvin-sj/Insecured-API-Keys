@@ -176,7 +176,7 @@ export async function fetchPaginated<T>(
     pageSize: pageSize.toString(),
   });
   
-  const fullEndpoint = `${endpoint}?${params.toString()}`;
+  const fullEndpoint = `${endpoint}${endpoint.includes("?") ? "&" : "?"}${params.toString()}`;
   const response = await fetchWithRateLimit<any>(fullEndpoint, options);
   
   if (response.data) {
