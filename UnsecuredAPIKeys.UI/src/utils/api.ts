@@ -89,7 +89,13 @@ export async function fetchWithRateLimit<T>(
     }
 
     // Handle successful response
-    const data = await response.json();
+    const contentLength = response.headers.get("content-length");
+    const contentType   = response.headers.get("content-type") ?? "";
+    const hasBody = response.status !== 204 &&
+                    contentType.includes("application/json") &&
+                    contentLength !== "0";
+
+    const data = hasBody ? await response.json() : null;
 
     return {
       data: data as T,
