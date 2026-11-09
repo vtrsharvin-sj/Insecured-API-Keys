@@ -112,7 +112,7 @@ namespace UnsecuredAPIKeys.WebAPI
 
             var app = builder.Build();
 
-            // Apply any pending Migrations
+            // Apply any pending Migrations (MigrateAsync is idempotent and safe on fresh databases)
             using (var scope = app.Services.CreateScope())
             {
                 var servicesTmp = scope.ServiceProvider;
@@ -120,16 +120,9 @@ namespace UnsecuredAPIKeys.WebAPI
                 {
                     var context = servicesTmp.GetRequiredService<DBContext>();
 
-                    if (!(await context.Database.GetPendingMigrationsAsync().ConfigureAwait(true)).Any())
-                    {
-                        Log.Information("No Pending migrations for the database. Continuing.");
-                    }
-                    else
-                    {
-                        Log.Information("Applying database migrations...");
-                        await context.Database.MigrateAsync().ConfigureAwait(true);
-                        Log.Information("Database migrations applied successfully");
-                    }
+                    Log.Information("Applying database migrations...");
+                    await context.Database.MigrateAsync().ConfigureAwait(true);
+                    Log.Information("Database migrations applied successfully");
                 }
                 catch (Exception ex)
                 {
