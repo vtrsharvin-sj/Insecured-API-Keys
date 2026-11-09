@@ -511,17 +511,18 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
         public async Task<ActionResult<PaginatedResponse<APIKey>>> GetAllValidKeys(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50,
-            [FromQuery] int? type = null)
+            [FromQuery] int? type = null,
+            [FromQuery] string? statusFilter = null)
         {
             // Validate pagination parameters
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 50;
             if (pageSize > 100) pageSize = 100; // Cap at 100 for performance
 
-            // Build query — show all keys (verified or not); exclude only Removed
-            var query = dbContext.APIKeys
-                .Include(x => x.References)
-                .Where(s => s.Status != ApiStatusEnum.Removed);
+            // Build query — show all keys by default; "valid" filter shows only Valid status
+            var query = statusFilter == "valid"
+                ? dbContext.APIKeys.Include(x => x.References).Where(s => s.Status == ApiStatusEnum.Valid)
+                : dbContext.APIKeys.Include(x => x.References).Where(s => s.Status != ApiStatusEnum.Removed);
 
             // Add type filter if specified
             if (type.HasValue)
