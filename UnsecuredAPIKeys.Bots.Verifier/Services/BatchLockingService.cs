@@ -252,8 +252,13 @@ namespace UnsecuredAPIKeys.Bots.Verifier.Services
                 return new List<long>();
             }
 
+            // Only return keys that still need verification — not already invalid/removed/fixed
             return await dbContext.APIKeys
                 .Where(k => k.Id >= batch.StartKeyId && k.Id <= batch.EndKeyId)
+                .Where(k => k.Status != ApiStatusEnum.Invalid &&
+                            k.Status != ApiStatusEnum.Removed &&
+                            k.Status != ApiStatusEnum.FlaggedForRemoval &&
+                            k.Status != ApiStatusEnum.NoLongerWorking)
                 .Select(k => k.Id)
                 .ToListAsync(cancellationToken);
         }
