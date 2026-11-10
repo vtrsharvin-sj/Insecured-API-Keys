@@ -71,11 +71,13 @@ namespace UnsecuredAPIKeys.Bots.Verifier.Services
                     // - Removed (3): Repo owner requested removal
                     // - FlaggedForRemoval (4): Removal request started
                     // - NoLongerWorking (5): Once valid but no longer working
+                    // - Error (6): Could not verify (e.g. unsupported provider)
                     var keysQuery = dbContext.APIKeys
                         .Where(s => s.Status != ApiStatusEnum.Invalid && 
                                    s.Status != ApiStatusEnum.Removed && 
                                    s.Status != ApiStatusEnum.FlaggedForRemoval && 
-                                   s.Status != ApiStatusEnum.NoLongerWorking)
+                                   s.Status != ApiStatusEnum.NoLongerWorking &&
+                                   s.Status != ApiStatusEnum.Error)
                         .Where(s => s.Status != ApiStatusEnum.Valid || s.LastCheckedUTC == null || s.LastCheckedUTC < validKeyGracePeriod);
 
                     // Exclude keys already in active batches
@@ -99,7 +101,8 @@ namespace UnsecuredAPIKeys.Bots.Verifier.Services
                             .Where(s => s.Status != ApiStatusEnum.Invalid && 
                                        s.Status != ApiStatusEnum.Removed && 
                                        s.Status != ApiStatusEnum.FlaggedForRemoval && 
-                                       s.Status != ApiStatusEnum.NoLongerWorking)
+                                       s.Status != ApiStatusEnum.NoLongerWorking &&
+                                       s.Status != ApiStatusEnum.Error)
                             .Where(s => s.Status != ApiStatusEnum.Valid || s.LastCheckedUTC == null || s.LastCheckedUTC < validKeyGracePeriod)
                             .CountAsync(cancellationToken);
                         
@@ -252,13 +255,14 @@ namespace UnsecuredAPIKeys.Bots.Verifier.Services
                 return new List<long>();
             }
 
-            // Only return keys that still need verification — not already invalid/removed/fixed
+            // Only return keys that still need verification — not already invalid/removed/fixed/error
             return await dbContext.APIKeys
                 .Where(k => k.Id >= batch.StartKeyId && k.Id <= batch.EndKeyId)
                 .Where(k => k.Status != ApiStatusEnum.Invalid &&
                             k.Status != ApiStatusEnum.Removed &&
                             k.Status != ApiStatusEnum.FlaggedForRemoval &&
-                            k.Status != ApiStatusEnum.NoLongerWorking)
+                            k.Status != ApiStatusEnum.NoLongerWorking &&
+                            k.Status != ApiStatusEnum.Error)
                 .Select(k => k.Id)
                 .ToListAsync(cancellationToken);
         }
