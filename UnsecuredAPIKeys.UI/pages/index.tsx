@@ -61,7 +61,12 @@ export default function IndexPage() {
   const [error,       setError]       = useState<string | null>(null);
   const [copiedId,    setCopiedId]    = useState<number | null>(null);
   const [reportedIds, setReportedIds] = useState<number[]>([]);
-  const activeRef = useRef(true);
+  const activeRef  = useRef(true);
+  // Keep refs in sync with state so interval callbacks always see latest values
+  const filterRef  = useRef(filter);
+  const pageRef    = useRef(page);
+  useEffect(() => { filterRef.current = filter; }, [filter]);
+  useEffect(() => { pageRef.current   = page;   }, [page]);
 
   // ── fetch stats + types (used on mount and for auto-refresh) ─────────────
   const refreshStats = useCallback(() => {
@@ -78,6 +83,8 @@ export default function IndexPage() {
     fetchPaginated<ApiKey>(buildEndpoint(currentFilter), currentPage, PAGE_SIZE, { requestId: "validKeys" })
       .then((response) => {
         if (!activeRef.current) return;
+        // Silently ignore aborted/cancelled requests — a newer one is already in flight
+        if (response.cancelled) { setLoading(false); return; }
         if (response.data) setKeyPage(asKeyPage(response.data));
         else setError(response.error || "Unable to load keys right now.");
         setLoading(false);
@@ -85,26 +92,33 @@ export default function IndexPage() {
   }, []);
 
   // ── on mount: initial load + auto-refresh interval ────────────────────────
+  // isMounted prevents the filter/page effect from double-firing on first render
+  const isMounted = useRef(false);
+
   useEffect(() => {
     activeRef.current = true;
+    isMounted.current = true;
     refreshStats();
     refreshKeys(filter, page);
 
     const interval = setInterval(() => {
       if (!activeRef.current) return;
       refreshStats();
-      refreshKeys(filter, page);
+      // Use refs so the interval always sees the latest filter/page
+      refreshKeys(filterRef.current, pageRef.current);
     }, REFRESH_INTERVAL_MS);
 
     return () => {
       activeRef.current = false;
+      isMounted.current = false;
       clearInterval(interval);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── when filter or page changes: reload keys immediately ─────────────────
+  // ── when filter or page changes: reload keys (skip the very first render) ─
   useEffect(() => {
+    if (!isMounted.current) return;
     refreshKeys(filter, page);
   }, [filter, page, refreshKeys]);
 
@@ -252,9 +266,9 @@ export default function IndexPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-mono">
-                        {maskKey(key.apiKey)}{" "}
+                        <span title={key.apiKey}>{maskKey(key.apiKey)}</span>{" "}
                         <Button size="sm" variant="light" onPress={() => copyKey(key)}>
-                          {copiedId === key.id ? "Copied" : "Copy"}
+                          {copiedId === key.id ? "Copied ✔" : "Copy full key"}
                         </Button>
                       </td>
                       <td className="px-4 py-3">{statusBadge(key.status)}</td>
