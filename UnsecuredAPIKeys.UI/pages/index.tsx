@@ -268,7 +268,7 @@ export default function IndexPage() {
                       <td className="px-4 py-3 font-mono">
                         <span title={key.apiKey}>{maskKey(key.apiKey)}</span>{" "}
                         <Button size="sm" variant="light" onPress={() => copyKey(key)}>
-                          {copiedId === key.id ? "Copied ✔" : "Copy full key"}
+                          {copiedId === key.id ? "Copied ✔" : "Copy"}
                         </Button>
                       </td>
                       <td className="px-4 py-3">{statusBadge(key.status)}</td>
