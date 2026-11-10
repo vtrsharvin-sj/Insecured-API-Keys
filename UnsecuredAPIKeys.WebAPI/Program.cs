@@ -27,6 +27,8 @@ namespace UnsecuredAPIKeys.WebAPI
                     npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     npgsqlOptions.EnableRetryOnFailure(3);
                 });
+                // Suppress warning about pending model changes — only relevant during development
+                options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             });
             builder.Services.AddScoped<ISystemdService, SystemdService>();
             builder.Services.AddMemoryCache();
