@@ -2,12 +2,38 @@ import Head from "next/head";
 import { Link } from "@heroui/link";
 import { Code } from "@heroui/code";
 import { Snippet } from "@heroui/snippet";
+import { Button } from "@heroui/button";
 import NextLink from "next/link";
+import { useState } from "react";
 
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
+import { fetchWithRateLimit } from "@/utils/api";
 
 export default function AboutPage() {
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [token, setToken]     = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [tokenMsg, setTokenMsg]     = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function submitToken() {
+    if (!token.trim()) return;
+    setSubmitting(true);
+    setTokenMsg(null);
+    const res = await fetchWithRateLimit<{ message?: string; error?: string }>("/API/SubmitToken", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ Token: token.trim() }),
+      requestId: "submitToken",
+    });
+    setSubmitting(false);
+    if (res.data?.message) {
+      setTokenMsg({ ok: true, text: res.data.message });
+      setToken("");
+    } else {
+      setTokenMsg({ ok: false, text: res.data?.error ?? res.error ?? "Something went wrong." });
+    }
+  }
   return (
     <>
       <Head>
@@ -227,6 +253,57 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Contribute a GitHub Token ── */}
+          <div className="mt-12 w-full max-w-4xl">
+            <div className="rounded-xl border border-default-200 bg-content1 p-8 text-center">
+              <h3 className="text-2xl font-bold mb-2">Boost the Scraper 🚀</h3>
+              <p className="text-default-500 mb-6 text-sm">
+                The scraper uses GitHub tokens to search for exposed keys. More tokens = more rate limit headroom = faster discovery.
+                If you have a spare GitHub PAT with <code className="bg-default-100 px-1 rounded">public_repo</code> scope, contribute it here.
+              </p>
+              <Button color="primary" variant="flat" onPress={() => { setShowTokenModal(true); setTokenMsg(null); }}>
+                Contribute a GitHub Token
+              </Button>
+            </div>
+          </div>
+
+          {/* ── Token submission modal ── */}
+          {showTokenModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowTokenModal(false)}>
+              <div className="w-full max-w-md rounded-xl bg-content1 border border-default-200 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                <h2 className="text-xl font-bold mb-1">Contribute a GitHub Token</h2>
+                <p className="text-default-500 text-sm mb-4">
+                  Create a token at{" "}
+                  <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=InsecuredAPIKeys+Scraper" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    github.com/settings/tokens
+                  </a>{" "}
+                  with <code className="bg-default-100 px-1 rounded">public_repo</code> scope, then paste it below.
+                  Your token is validated and stored securely — it's only used for GitHub code search.
+                </p>
+                <input
+                  type="password"
+                  placeholder="github_pat_..."
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className="w-full rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:border-primary"
+                  onKeyDown={(e) => e.key === "Enter" && !submitting && submitToken()}
+                  autoComplete="off"
+                />
+                {tokenMsg && (
+                  <p className={`text-sm mb-3 ${tokenMsg.ok ? "text-success" : "text-danger"}`}>
+                    {tokenMsg.text}
+                  </p>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="flat" onPress={() => setShowTokenModal(false)}>Cancel</Button>
+                  <Button size="sm" color="primary" isLoading={submitting} isDisabled={!token.trim()} onPress={submitToken}>
+                    Submit Token
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </DefaultLayout>
     </>

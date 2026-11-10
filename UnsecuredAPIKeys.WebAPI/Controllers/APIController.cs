@@ -367,6 +367,58 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Accepts a user-contributed GitHub PAT, validates it against the GitHub API,
+        /// then stores it in SearchProviderTokens for the scraper to use.
+        /// </summary>
+        [HttpPost("SubmitToken")]
+        public async Task<IActionResult> SubmitToken([FromBody] SubmitTokenDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Token))
+                return BadRequest(new { error = "Token cannot be empty." });
+
+            // Reject obviously non-PAT strings
+            if (request.Token.Length < 20)
+                return BadRequest(new { error = "That doesn't look like a valid GitHub token." });
+
+            // Validate the token against GitHub before saving
+            try
+            {
+                using var http = new System.Net.Http.HttpClient();
+                http.DefaultRequestHeaders.Add("User-Agent", "InsecuredAPIKeys-TokenValidator/1.0");
+                http.DefaultRequestHeaders.Add("Authorization", $"token {request.Token}");
+                http.Timeout = TimeSpan.FromSeconds(10);
+
+                var ghResponse = await http.GetAsync("https://api.github.com/user");
+                if (!ghResponse.IsSuccessStatusCode)
+                    return BadRequest(new { error = "GitHub rejected that token. Make sure it has the public_repo scope." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(503, new { error = "Could not reach GitHub to validate the token. Please try again." });
+            }
+
+            // Check if this token is already in the database
+            var exists = await dbContext.SearchProviderTokens
+                .AnyAsync(t => t.Token == request.Token);
+
+            if (exists)
+                return Conflict(new { error = "This token has already been submitted." });
+
+            dbContext.SearchProviderTokens.Add(new SearchProviderToken
+            {
+                Token       = request.Token,
+                SearchProvider = SearchProviderEnum.GitHub,
+                IsEnabled   = true,
+                LastUsedUTC = null
+            });
+
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("New GitHub token contributed by user (IP: {IP})", GetClientIpAddress(HttpContext));
+
+            return Ok(new { message = "Token accepted — thank you! The scraper will start using it shortly." });
+        }
+
         [HttpGet("GetSnitchLeaderboard")]
         public async Task<ActionResult<List<SnitchLeaderboardDto>>> GetSnitchLeaderboard([FromQuery] int count = 10)
         {
@@ -622,6 +674,11 @@ namespace UnsecuredAPIKeys.WebAPI.Controllers
             public long KeyId { get; set; }
             public string? Reason { get; set; }
             public string? ReporterEmail { get; set; }
+        }
+
+        public class SubmitTokenDto
+        {
+            public string Token { get; set; } = string.Empty;
         }
     }
 }
