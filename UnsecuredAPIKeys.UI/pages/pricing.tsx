@@ -3,53 +3,11 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import NextLink from "next/link";
-import { useState, useEffect } from "react";
 
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
-import { fetchWithRateLimit } from "@/utils/api";
-
-interface RateLimitInfo {
-  maxRequests: number;
-  timeWindowHours: number;
-  description: string;
-  note: string;
-}
 
 export default function PricingPage() {
-  const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitInfo | null>(null);
-
-  useEffect(() => {
-    const fetchRateLimitInfo = async () => {
-      try {
-        const response = await fetchWithRateLimit<RateLimitInfo>("/API/GetRateLimitInfo", {
-          requestId: "rateLimitInfo",
-        });
-
-        if (response.data) {
-          setRateLimitInfo(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch rate limit info:", error);
-        // Fallback to default values if API fails
-        setRateLimitInfo({
-          maxRequests: 5,
-          timeWindowHours: 1,
-          description: "Fair usage limits to ensure service availability for all users",
-          note: "After reaching the limit, a fallback key will be provided instead of blocking access"
-        });
-      }
-    };
-
-    fetchRateLimitInfo();
-  }, []);
-
-  const getRateLimitText = () => {
-    if (!rateLimitInfo) return "Fair usage limits*";
-
-    return `Fair usage limits (${rateLimitInfo.maxRequests} requests/${rateLimitInfo.timeWindowHours} hour)*`;
-  };
-
   return (
     <>
       <Head>
@@ -164,10 +122,6 @@ export default function PricingPage() {
                       <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
                       <span>Real-time statistics</span>
                     </li>
-                    <li className="flex items-center">
-                      <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                      <span>{getRateLimitText()}</span>
-                    </li>
                   </ul>
                   <div className="space-y-3 mt-4">
                     <NextLink href="/">
@@ -188,7 +142,7 @@ export default function PricingPage() {
               <Card className="relative border-2 border-pink-500 overflow-visible mt-8">
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                   <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap">
-                    💸 For Sexy Rich People
+                    💸 For Premium Users
                   </div>
                 </div>
                 <CardHeader className="text-center pt-12">
@@ -198,7 +152,7 @@ export default function PricingPage() {
                     <span className="text-gray-500 text-sm">/forever</span>
                   </div>
                   <p className="text-gray-400 mt-2 text-sm">
-                    For those with massive amounts of sex appeal
+                    For those who want to support the project
                   </p>
                 </CardHeader>
                 <CardBody className="pt-0">
