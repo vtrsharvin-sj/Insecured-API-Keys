@@ -186,6 +186,18 @@ export default function PricingPage() {
                       <span className="text-gray-400">*Badge not included</span>
                     </li>
                   </ul>
+                  <div className="space-y-3 mt-4">
+                    <a href="https://buymeacoffee.com/sharvinsj" target="_blank" rel="noreferrer" className="block w-full">
+                      <Button
+                        color="default"
+                        variant="flat"
+                        className="w-full"
+                        size="md"
+                      >
+                        ☕ Buy me a coffee
+                      </Button>
+                    </a>
+                  </div>
                 </CardBody>
               </Card>
             </div>
