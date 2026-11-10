@@ -29,17 +29,6 @@ export default function DefaultLayout({
           Insecured API Keys — Open Source
         </Link>
 
-        <span className="text-default-400">·</span>
-
-        <Link
-          isExternal
-          className="text-default-400 text-xs hover:text-default-600"
-          href="https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource"
-          title="Original project by TSCarterJr"
-        >
-          Based on UnsecuredAPIKeys Open Source
-        </Link>
-
         {/* Legal Disclaimer */}
         <span className="text-default-400">·</span>
         <Button
