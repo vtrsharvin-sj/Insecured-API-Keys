@@ -77,16 +77,15 @@ export default function IndexPage() {
   }, []);
 
   // ── fetch key page ────────────────────────────────────────────────────────
-  const refreshKeys = useCallback((currentFilter: FilterMode, currentPage: number) => {
-    setLoading(true);
-    setError(null);
+  const refreshKeys = useCallback((currentFilter: FilterMode, currentPage: number, showLoading = true) => {
+    if (showLoading) { setLoading(true); setError(null); }
     fetchPaginated<ApiKey>(buildEndpoint(currentFilter), currentPage, PAGE_SIZE, { requestId: "validKeys" })
       .then((response) => {
         if (!activeRef.current) return;
         // Silently ignore aborted/cancelled requests — a newer one is already in flight
         if (response.cancelled) { setLoading(false); return; }
         if (response.data) setKeyPage(asKeyPage(response.data));
-        else setError(response.error || "Unable to load keys right now.");
+        else if (showLoading) setError(response.error || "Unable to load keys right now.");
         setLoading(false);
       });
   }, []);
@@ -104,8 +103,8 @@ export default function IndexPage() {
     const interval = setInterval(() => {
       if (!activeRef.current) return;
       refreshStats();
-      // Use refs so the interval always sees the latest filter/page
-      refreshKeys(filterRef.current, pageRef.current);
+      // Silent background refresh — don't show loading spinner
+      refreshKeys(filterRef.current, pageRef.current, false);
     }, REFRESH_INTERVAL_MS);
 
     return () => {
