@@ -1,134 +1,115 @@
-# Insecured API Keys (Lite, Linux Edition)
+# Insecured API Keys
 
-A platform for discovering, validating, and tracking unsecured API keys across public code repositories. Educational and security-awareness project — please use responsibly.
+A platform for discovering, validating, and tracking exposed API keys found in public code repositories.
 
-**This edition is Linux-first:** the whole stack runs with Docker Compose on any Linux host (or as systemd services), and the Windows-only PowerShell tooling has been removed.
+> ⚠️ **Educational and security-awareness project. Use responsibly and in accordance with applicable laws.**
 
-## ⚠️ Educational Purpose Only
+## What it does
 
-This project is designed for educational and security awareness purposes. It demonstrates common security vulnerabilities in API key management. Please use responsibly and in accordance with applicable laws and regulations.
+Insecured API Keys continuously scans public GitHub repositories for accidentally committed API keys. When keys are found, they are validated against their respective providers. Users can browse discovered keys, filter by type, report them to the original repository owners, and contribute their own GitHub tokens to help the scraper run faster.
 
-## 🏗️ Architecture
+## Stack
 
-- **WebAPI** (.NET 9): Core backend providing REST endpoints and real-time SignalR stats
-- **UI** (Next.js): Frontend with API key discovery browser
-- **Data layer** (EF Core + PostgreSQL): schema migrations applied automatically at API startup
-- **Providers library**: extensible validation framework per API provider
-- **Verifier bot** (.NET worker): validates discovered keys
-- **Scraper bot** (.NET worker): discovers new keys across Git platforms
+| Layer | Technology |
+|---|---|
+| Backend API | .NET 9 (ASP.NET Core) |
+| Frontend | Next.js 14 (static export) |
+| Database | PostgreSQL 15 |
+| Scraper bot | .NET 9 worker |
+| Verifier bot | .NET 9 worker |
+| Reverse proxy | nginx |
+| Container runtime | Docker Compose |
 
-> ⚠️ **Attentive on the scale of the stack: the WebAPI is the only service that publicly exposes keys; the bots are background workers.**
-
-## What's included / removed
-
-Included: core API, UI, scraper + verifier workers, real-time stats, rate limiting.
-
-Removed from the previous version ("legacy UI"):
-
-- ❌ Discord OAuth login, Discord role service and member rate-limit tier
-- ❌ PayPal donation buttons, IPN webhook, donation tracking endpoints and related UI pages
-- ❌ Windows PowerShell deploy/analysis scripts, Claude bot workflows
-- ❌ Google Analytics/other snippets tied to the removed flows
-
-The Discord user table remains in the database schema for compatibility with existing deployments, but nothing in the code reads from it anymore.
-
-## 🚀 Quick Start (Linux, Docker Compose)
-
-Prerequisites: **Linux** (Debian, Ubuntu, Fedora, ...), **Docker** and the **compose** plugin.
+## Quick start
 
 ```bash
 git clone https://github.com/vtrsharvin-sj/Insecured-API-Keys.git
 cd Insecured-API-Keys
 
-# 1. Configure
-./deploy/deploy.sh setup        # copies .env.example -> .env
-$EDITOR .env                     # set POSTGRES_PASSWORD etc.
+cp .env.example .env
+# Edit .env — set POSTGRES_PASSWORD and ALLOWED_REFERRERS at minimum
 
-# 2. Build & run everything (postgres + api + verifier + scraper)
-./deploy/deploy.sh build
-
-# 3. Verify
-curl -s http://localhost:8080 > /dev/null        # UI (nginx)  - port-forward THIS to your URL
-curl -s http://localhost:8081/Status/GetStatus   # API direct
+docker compose up -d --build
 ```
 
-The API applies all EF Core migrations on first boot; PostgreSQL data is persisted in a Docker volume (`postgres-data`).
+The API applies all database migrations automatically on first boot.
 
-| Service   | Container name | Notes |
-|-----------|----------------|-------|
-| db        | `api-db`       | PostgreSQL 15, health-checked |
-| ui        | `api-ui`       | Static Next.js export via nginx on port `UI_PORT` (default **8080**) |
-| api       | `api`          | WebAPI on host port `API_PORT` (default **8081**) |
-| verifier  | `api-verifier` | background key validator (continuous mode) |
-| scraper   | `api-scraper`  | background key discovery worker (continuous mode) |
+| Service | URL | Notes |
+|---|---|---|
+| UI | `http://localhost:8080` | nginx static export + API proxy |
+| API | `http://localhost:8081` | Direct API access |
+| Health | `http://localhost:8081/health` | Used by healthchecks |
 
-**Single-URL deployment:** the `ui` service serves the whole site on one port and reverse-proxies the API at `/apiproxy/*` on the same origin (including the `/hubs/stats` SignalR websocket). Port-forward `UI_PORT` and you have the full URL; the API always accepts same-origin requests regardless of the final domain. If you call the API directly (not through the proxy) from another domain, add it to `ALLOWED_REFERRERS`.
+## Configuration
 
-Useful commands:
+All configuration is done via environment variables in `.env`:
 
+| Variable | Required | Description |
+|---|---|---|
+| `POSTGRES_PASSWORD` | ✅ | Database password — change from default |
+| `POSTGRES_USER` | | Database user (default: `postgres`) |
+| `UI_PORT` | | Host port for the UI (default: `8080`) |
+| `API_PORT` | | Host port for direct API access (default: `8081`) |
+| `ALLOWED_REFERRERS` | | Comma-separated domains allowed to call the API |
+| `PRODUCTION_DOMAIN` | | Your domain — adds it to CORS allowed origins |
+| `ASPNETCORE_ENVIRONMENT` | | `Production` or `Development` (Swagger at `/scalar/v1`) |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | | Google Analytics ID — leave blank to disable GA |
+| `SCRAPER_CONTINUOUS_MODE` | | `true` to loop the scraper every 10 min (default) |
+| `VERIFIER_CONTINUOUS_MODE` | | `true` to loop the verifier every 5 min (default) |
+
+## Adding a GitHub token for the scraper
+
+The scraper requires at least one GitHub personal access token with `public_repo` scope. Without it, no keys will be found.
+
+**Option 1 — via the UI:** Go to the About page and click "Contribute a GitHub Token".
+
+**Option 2 — via the database directly:**
 ```bash
-./deploy/deploy.sh logs        # tail all services
-./deploy/deploy.sh stop        # stop everything
-docker compose ps              # status overview
+docker exec -i api-db psql -U postgres -d UnsecuredAPIKeys -c \
+  "INSERT INTO \"SearchProviderTokens\" (\"Token\", \"SearchProvider\", \"IsEnabled\", \"LastUsedUTC\") VALUES ('your_pat_here', 1, true, NULL);"
 ```
 
-## 🐧 Running without Docker (systemd)
+## API endpoints
 
-1. Install .NET 9 SDK (see [Microsoft's Ubuntu/Debian install guide](https://learn.microsoft.com/en-us/dotnet/core/install/linux)) and PostgreSQL.
-2. Publish: `dotnet publish UnsecuredAPIKeys.WebAPI -c Release -o /opt/insecured-api-keys/UnsecuredAPIKeys.WebAPI` (same for the two bots).
-3. Copy `deploy/systemd/*.service` to `/etc/systemd/system/`, edit the `User=`, `WorkingDirectory=` and `CONNECTION_STRING` entries.
-4. `sudo systemctl daemon-reload && sudo systemctl enable --now insecured-api-keys-api insecured-api-keys-verifier insecured-api-keys-scraper`
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/API/GetAllValidKeys` | Paginated key listing (`?page=1&pageSize=50&type=130&statusFilter=valid`) |
+| GET | `/API/GetKeyStatistics` | Total/valid/new today/fixed counts |
+| GET | `/API/GetKeyTypes` | Available key types with counts |
+| POST | `/API/TrackIssueSubmission` | Record that a user flagged a key |
+| POST | `/API/SubmitToken` | Contribute a GitHub PAT for the scraper |
+| GET | `/API/GetSnitchLeaderboard` | Top reporters |
+| GET | `/health` | Healthcheck endpoint |
 
-## 🔧 Configuration
+## Supported API key types
 
-All runtime configuration is environment-variable based:
+OpenAI · Anthropic Claude · Google AI · Cohere · HuggingFace · Stability AI · Mistral AI · Replicate · Together AI · OpenRouter · Perplexity · Groq · DeepSeek · ElevenLabs · RunwayML · AssemblyAI · Pinecone · Weaviate · AWS · Azure · GCP · GitHub · GitLab · Stripe · SendGrid · Twilio · MongoDB · Firebase
 
-| Variable | Used by | Default | Purpose |
-|---|---|---|---|
-| `CONNECTION_STRING` | api / bots | built-in localhost string | PostgreSQL connection |
-| `POSTGRES_PASSWORD` | compose db/api/bots | `postgres` | database password inside the compose stack |
-| `UI_PORT` | compose | `8080` | host port for the full site (UI + API proxy) — **port-forward this one** |
-| `API_PORT` | compose | `8081` | host port for direct access to the raw API |
-| `ASPNETCORE_ENVIRONMENT` | api | `Production` | `Development` enables Swagger at `/scalar/v1` |
-| `SCRAPER_SERVICE_NAME` | api | `api-scraper` | container name used by the /status endpoint |
-| `VERIFIER_SERVICE_NAME` | api | `api-verifier` | container name used by the /status endpoint |
-| `ALLOWED_REFERRERS` | api | – | extra domains allowed to call the API directly (same-origin always allowed) |
-| `PRODUCTION_DOMAIN` | api | – | adds CORS origin `https://<domain>` (only needed for direct cross-origin browser use) |
-| `FORCE_HTTPS_REDIRECT` | api | unset | set to enable HTTPS redirection (behind your own TLS proxy) |
+## Running without Docker
 
-Rate limiting is per-IP, configurable through the `RateLimit` row in the `ApplicationSettings` table (default 5 requests/hour).
+1. Install .NET 9 SDK and PostgreSQL 15
+2. Set the `CONNECTION_STRING` environment variable
+3. Run migrations: `dotnet ef database update --project UnsecuredAPIKeys.Data`
+4. Start the API: `dotnet run --project UnsecuredAPIKeys.WebAPI`
+5. Start the bots: `dotnet run --project UnsecuredAPIKeys.Bots.Scraper` / `UnsecuredAPIKeys.Bots.Verifier`
+6. Build the UI: `cd UnsecuredAPIKeys.UI && npm install && npm run build:simple`
 
-## 🔑 API endpoints (high level)
+## Contributing
 
-- `GET /api/GetRandomKey` — fetch an exposed key (rate limited; over-limit requests get a fallback key instead of a hard block)
-- `GET /api/GetKeyStatistics`, `/api/GetPatternEffectiveness`, `/api/GetInvalidationStats`, ...
-- `POST /api/webhook/key-fixed` — mark a key as fixed
-- SignalR hub at `/hubs/stats` (`DisplayCountUpdated`, `ActiveUserUpdated`, ...)
-
-Live OpenAPI docs are available at `/scalar/v1` in Development mode.
-
-## 🤝 Contributing
+Pull requests are welcome. For major changes, open an issue first.
 
 1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push: `git push origin feature/amazing-feature`
-5. Open a Pull Request (CI builds the backend and the UI on `ubuntu-latest`)
+2. Create a branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'Add my feature'`
+4. Push: `git push origin feature/my-feature`
+5. Open a Pull Request
 
-## 📝 License
+## Support
 
-Custom attribution-required license based on MIT — see [LICENSE](LICENSE).
+If this project is useful to you, consider [buying me a coffee](https://buymeacoffee.com/sharvinsj) ☕
 
-### ⚠️ Attribution requirement
+## License
 
-This codebase derives from [UnsecuredAPIKeys-OpenSource](https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource) by TSCarterJr. Any public-facing use of this code requires a visible UI attribution link to that original repository. Removing attribution violates the license.
+MIT — see [LICENSE](LICENSE).
 
-## ⚖️ Legal and Ethical Considerations
-
-- **Educational purpose**: demonstrates insecure key handling for security awareness
-- **Responsible use**: users are responsible for compliance with applicable laws
-- **No warranty**: the software is provided as-is
-
----
-
-Built on [UnsecuredAPIKeys-OpenSource](https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource) · Linux edition maintained by [@vtrsharvin-sj](https://github.com/vtrsharvin-sj)
+> This project is built on top of [UnsecuredAPIKeys-OpenSource](https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource) by TSCarterJr. Attribution is required by the original license.
