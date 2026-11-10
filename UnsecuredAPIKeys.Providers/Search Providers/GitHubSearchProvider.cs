@@ -3,7 +3,6 @@ using Octokit;
 using UnsecuredAPIKeys.Data;
 using UnsecuredAPIKeys.Data.Models;
 using UnsecuredAPIKeys.Providers._Interfaces;
-// Assuming logging might be needed later
 
 namespace UnsecuredAPIKeys.Providers.Search_Providers
 {
@@ -67,15 +66,15 @@ namespace UnsecuredAPIKeys.Providers.Search_Providers
                     }
                     catch (RateLimitExceededException ex)
                     {
-                        logger?.LogWarning("GitHub API rate limit exceeded. Waiting until {ResetTime}.", ex.Reset.ToString("o")); // Use _logger field
+                        logger?.LogWarning("GitHub API rate limit exceeded. Waiting until {ResetTime}.", ex.Reset.ToString("o"));
 
-                        // Wait until the rate limit resets
                         var delay = ex.Reset - DateTimeOffset.UtcNow;
                         if (delay > TimeSpan.Zero)
                         {
                             if (delay.TotalMinutes > 1)
                             {
-                                Environment.Exit(200);
+                                // Signal the scraper main loop to record the rate-limit reset time before exiting
+                                throw new GitHubRateLimitException(ex.Reset.UtcDateTime);
                             }
 
                             await Task.Delay(delay);

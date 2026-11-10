@@ -66,13 +66,23 @@ export async function fetchWithRateLimit<T>(
 
     // Handle other errors
     if (!response.ok) {
-      // Don't expose internal error details to users
-      const userFriendlyError = response.status >= 500
-        ? "Server error. Please try again later."
-        : response.status === 404
-        ? "Resource not found."
-        : "Request failed. Please try again.";
-        
+      // Try to read error message from response body first
+      let bodyError: string | null = null;
+      try {
+        const contentType = response.headers.get("content-type") ?? "";
+        if (contentType.includes("application/json")) {
+          const body = await response.json() as Record<string, unknown>;
+          bodyError = (body.error ?? body.message ?? body.title) as string | null;
+        }
+      } catch { /* ignore parse errors */ }
+
+      const userFriendlyError = bodyError
+        ?? (response.status >= 500
+          ? "Server error. Please try again later."
+          : response.status === 404
+          ? "Resource not found."
+          : "Request failed. Please try again.");
+
       return {
         error: userFriendlyError,
         rateLimit: rateLimitHeader.limit
@@ -82,7 +92,7 @@ export async function fetchWithRateLimit<T>(
               requestsCount:
                 rateLimitHeader.limit - rateLimitHeader.requestsRemaining,
               resetAt: rateLimitHeader.resetAt,
-              timeWindow: "01:00:00", // Default 1 hour
+              timeWindow: "01:00:00",
             }
           : undefined,
       };

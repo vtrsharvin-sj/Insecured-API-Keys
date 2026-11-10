@@ -241,6 +241,7 @@ namespace UnsecuredAPIKeys.Bots.Scraper
 
                 activeToken = await dbContext.SearchProviderTokens
                                         .Where(t => t.IsEnabled)
+                                        .Where(t => t.RateLimitedUntilUTC == null || t.RateLimitedUntilUTC < DateTime.UtcNow)
                                         .OrderBy(t => t.LastUsedUTC ?? DateTime.MinValue)
                                         .FirstOrDefaultAsync();
 
@@ -295,6 +296,22 @@ namespace UnsecuredAPIKeys.Bots.Scraper
             try
             {
                 searchResults = await searchProvider.SearchAsync(query, activeToken);
+            }
+            catch (UnsecuredAPIKeys.Providers.GitHubRateLimitException ex)
+            {
+                logger?.LogWarning("Token ID {TokenId} is rate-limited until {ResetTime}. Marking and skipping.", activeToken.Id, ex.ResetAtUTC);
+                Console.WriteLine($"Warning: Token {activeToken.Id} rate-limited until {ex.ResetAtUTC:O}. Will use another token next cycle.");
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<DBContext>();
+                    var token = await dbContext.SearchProviderTokens.FindAsync(activeToken.Id);
+                    if (token != null)
+                    {
+                        token.RateLimitedUntilUTC = ex.ResetAtUTC;
+                        await dbContext.SaveChangesAsync();
+                    }
+                }
+                return; // Next cycle will pick a different token
             }
             catch (ArgumentNullException ex)
             {

@@ -12,5 +12,8 @@ namespace UnsecuredAPIKeys.Data.Models
 
         // Make it nullable so we can identify never-used tokens  
         public DateTime? LastUsedUTC { get; set; }
+
+        // Set by the scraper when GitHub rate-limits this token; scraper skips it until this time passes
+        public DateTime? RateLimitedUntilUTC { get; set; }
     }
 }
