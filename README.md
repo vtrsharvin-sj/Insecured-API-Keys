@@ -1,160 +1,54 @@
-<div align="center">
+# Insecured API Keys — Find exposed API keys before attackers do
 
-# 🔑 Insecured API Keys
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)
+![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)
+![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
 
-**Discover, validate, and track exposed API keys found in public repositories.**
+> A full-stack platform that continuously scans public GitHub repositories for accidentally committed API keys, validates them against their providers, and makes them discoverable so developers can be notified and rotate their credentials before damage is done.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org)
-[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose)
-[![GitHub](https://img.shields.io/badge/GitHub-vtrsharvin--sj-black?logo=github)](https://github.com/vtrsharvin-sj/Insecured-API-Keys)
+- [Introduction](#introduction)
+- [How it Works](#how-it-works)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+  - [Configuration](#configuration)
+  - [Adding GitHub Tokens](#adding-github-tokens)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [License](#license)
 
-[**Live Demo**](https://8080-agq36dxutmi62gju3bzvftrayu.instabox.tech) · [**Buy Me a Coffee**](https://buymeacoffee.com/sharvinsj) · [**Report a Bug**](https://github.com/vtrsharvin-sj/Insecured-API-Keys/issues)
+# Introduction
 
-</div>
+Every day, developers accidentally push API keys to public GitHub repositories — OpenAI keys, Stripe secrets, AWS credentials, and dozens more. Most of them don't realise until something breaks or a bill arrives.
 
----
+**Insecured API Keys** runs a scraper that searches GitHub code 24/7, extracts candidate keys, and runs each one through the matching provider's API to confirm whether it is live. Valid keys appear on the site with the repository they came from, so security researchers and community members can open GitHub issues to notify the owners.
 
-## What is this?
+The platform also exposes a leaderboard for users who actively report keys, a token contribution system so the community can donate GitHub PATs to increase scraping throughput, and automatic token rotation — when a token hits GitHub's rate limit the scraper parks it, picks the next available one, and keeps going without any manual intervention.
 
-Insecured API Keys is a full-stack security platform that continuously scans public GitHub repositories for accidentally committed API keys. When keys are found, they are validated against their respective providers (OpenAI, Anthropic, Google, Stripe, and 25+ more). Users can browse discovered keys, filter by provider, copy them, report them to the original repository owners, and contribute their own GitHub tokens to help the scraper discover more.
-
-> ⚠️ **For educational and security awareness purposes only. Use responsibly and in accordance with applicable laws.**
-
----
-
-## Features
-
-- 🔍 **Continuous scraping** — searches GitHub code using rotating API tokens across 10+ search patterns
-- ✅ **Automatic validation** — verifies each key against its provider's API in real time
-- 🔄 **Smart token rotation** — when a GitHub token hits rate limits, it's automatically parked until reset and the next token takes over
-- 🤝 **Community tokens** — users can contribute their own GitHub PATs via the UI to boost scraping speed
-- 📊 **Live statistics** — total indexed, valid now, new today, fixed — auto-refreshing every 30 seconds without flicker
-- 🏆 **Leaderboard** — ranks users who report exposed keys to repo owners
-- 🌐 **Single-URL deployment** — nginx serves the UI and proxies the API on one port, one origin
-- 📱 **Responsive** — dark mode, mobile-friendly
-
----
-
-## Architecture
+# How it Works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        nginx (UI + proxy)                    │
-│   /          → Next.js static export                         │
-│   /apiproxy/ → WebAPI (ASP.NET Core 9)                       │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-         WebAPI        Scraper      Verifier
-         (.NET 9)      (.NET 9)     (.NET 9)
-              │            │            │
-              └────────────┼────────────┘
-                           │
-                     PostgreSQL 15
+GitHub Code Search
+       │
+       ▼
+  Scraper Bot  ──►  PostgreSQL  ◄──  Verifier Bot
+  (finds keys)       (stores)        (validates keys
+                                      against providers)
+       │
+       ▼
+   Web API  ──►  nginx  ──►  Next.js UI
+  (REST + SignalR)
 ```
 
-| Container | Purpose |
-|---|---|
-| `api-ui` | nginx serving the Next.js static export + reverse proxy to the API |
-| `api` | ASP.NET Core 9 REST API — migrations, endpoints, SignalR stats hub |
-| `api-scraper` | .NET worker — searches GitHub for exposed keys every 10 minutes |
-| `api-verifier` | .NET worker — validates keys against provider APIs every 5 minutes |
-| `api-db` | PostgreSQL 15 — persisted in a named Docker volume |
+1. **Scraper** — a .NET 9 worker runs search queries against the GitHub Code Search API every 10 minutes using a rotating pool of personal access tokens. Each result is parsed for API key patterns and stored in PostgreSQL.
 
----
+2. **Verifier** — a second .NET 9 worker picks up unverified keys in batches, calls the matching provider's API (OpenAI, Anthropic, Stripe, etc.), and marks each key as valid, invalid, or error. It uses a batch locking system so multiple instances can run without double-processing.
 
-## Quick Start
+3. **API** — an ASP.NET Core 9 REST API serves the frontend, handles community submissions, and runs a SignalR hub for real-time statistics. It applies all database migrations automatically on startup.
 
-**Prerequisites:** Linux, Docker, Docker Compose plugin.
+4. **UI** — a Next.js 14 static export served by nginx. The same nginx instance reverse-proxies the API under `/apiproxy/`, so the entire site runs on a single port and origin with no cross-origin complexity.
 
-```bash
-git clone https://github.com/vtrsharvin-sj/Insecured-API-Keys.git
-cd Insecured-API-Keys
-
-# 1. Configure
-cp .env.example .env
-nano .env   # set POSTGRES_PASSWORD and ALLOWED_REFERRERS at minimum
-
-# 2. Build and start everything
-docker compose up -d --build
-
-# 3. Verify
-curl http://localhost:8081/health        # → {"status":"healthy"}
-curl http://localhost:8080               # → HTML (UI)
-```
-
-The API automatically applies all database migrations on first boot. No manual setup needed.
-
----
-
-## Configuration
-
-All configuration lives in `.env`. Copy `.env.example` to get started.
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `POSTGRES_PASSWORD` | ✅ | `postgres` | **Change this.** Database password. |
-| `POSTGRES_USER` | | `postgres` | Database user |
-| `UI_PORT` | | `8080` | Host port for the full site (port-forward this one) |
-| `API_PORT` | | `8081` | Host port for direct API access |
-| `ALLOWED_REFERRERS` | | — | Comma-separated domains that may call the API (e.g. `mysite.com`) |
-| `PRODUCTION_DOMAIN` | | — | Your domain — adds it to CORS allowed origins |
-| `ASPNETCORE_ENVIRONMENT` | | `Production` | Set to `Development` to enable Swagger at `/scalar/v1` |
-| `FORCE_HTTPS_REDIRECT` | | unset | Set to `1` if you terminate TLS in front of this stack |
-| `SCRAPER_CONTINUOUS_MODE` | | `true` | Loop the scraper every 10 minutes |
-| `VERIFIER_CONTINUOUS_MODE` | | `true` | Loop the verifier every 5 minutes |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | | — | Google Analytics 4 ID — leave blank to disable GA entirely |
-
----
-
-## Adding GitHub Tokens for the Scraper
-
-The scraper needs at least one GitHub personal access token with `public_repo` scope. Without it, nothing gets scraped.
-
-**Option 1 — via the UI (recommended):**
-Go to the **About** page → click **"Contribute a GitHub Token"** → paste your PAT → Submit.
-The token is validated against GitHub before saving. Invalid tokens are rejected with a clear error.
-
-**Option 2 — directly in the database:**
-```bash
-docker exec api-db psql -U postgres -d UnsecuredAPIKeys \
-  -c "INSERT INTO \"SearchProviderTokens\" (\"Token\", \"SearchProvider\", \"IsEnabled\", \"LastUsedUTC\") VALUES ('your_pat_here', 1, true, NULL);"
-```
-
-**Token rotation:** When a token hits GitHub's rate limit, the scraper automatically parks it until the reset time and picks the next available token. No restarts needed.
-
-**Creating a GitHub PAT:** Go to [github.com/settings/tokens/new](https://github.com/settings/tokens/new?scopes=public_repo&description=InsecuredAPIKeys+Scraper), select `public_repo` scope, generate, and paste.
-
----
-
-## API Reference
-
-Base URL: `http://your-server:8081` or via proxy at `http://your-server:8080/apiproxy`
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/health` | None | Health check — returns `{"status":"healthy"}` |
-| GET | `/API/GetAllValidKeys` | Referrer | Paginated key listing. Params: `page`, `pageSize`, `type` (int), `statusFilter=valid` |
-| GET | `/API/GetKeyStatistics` | None | Counts: total, valid, new today, fixed |
-| GET | `/API/GetKeyTypes` | None | Available key types with counts |
-| GET | `/API/GetRateLimitInfo` | None | Current rate limit settings |
-| GET | `/API/GetSnitchLeaderboard` | None | Top reporters (param: `count`) |
-| GET | `/API/GetLeaderboardStats` | None | Aggregate leaderboard statistics |
-| GET | `/API/GetKeyRotations` | None | Recent key rotation events |
-| GET | `/API/GetPatternEffectiveness` | None | Search pattern success rates |
-| GET | `/API/GetInvalidationStats` | None | Key invalidation statistics |
-| POST | `/API/TrackIssueSubmission` | Referrer | Record that a user flagged a key. Body: `{ApiKeyId, ApiType, RepoUrl}` |
-| POST | `/API/SubmitToken` | None | Contribute a GitHub PAT. Body: `{Token}` — validated against GitHub before saving |
-| POST | `/API/webhook/key-fixed` | None | Mark a key as fixed. Body: `{KeyId, Reason}` |
-
-**Rate limiting:** `GetAllValidKeys` allows 500 requests/hour per IP. The API forwards real client IPs through the nginx proxy.
-
----
-
-## Supported API Key Types
+## Supported Key Types
 
 | Category | Providers |
 |---|---|
@@ -164,95 +58,111 @@ Base URL: `http://your-server:8081` or via proxy at `http://your-server:8080/api
 | Source Control | GitHub, GitLab, BitBucket |
 | Payments & Comms | Stripe, SendGrid, Twilio, MongoDB, Firebase |
 
----
+# Tech Stack
 
-## Running Without Docker
+- [ASP.NET Core 9](https://dotnet.microsoft.com) — REST API, SignalR hub, EF Core migrations, rate limiting, referrer-based access control
+- [Next.js 14](https://nextjs.org) — static export frontend, served by nginx
+- [PostgreSQL 15](https://www.postgresql.org) — primary datastore, persisted in a Docker named volume
+- [Entity Framework Core](https://docs.microsoft.com/ef/core/) — ORM with automatic migrations on startup
+- [Octokit](https://github.com/octokit/octokit.net) — GitHub API client used by the scraper
+- [nginx](https://nginx.org) — static file serving, API reverse proxy, security headers, CORS
+- [Docker Compose](https://docs.docker.com/compose/) — orchestrates all five services
 
-1. Install [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9) and PostgreSQL 15
-2. Set `CONNECTION_STRING` environment variable:
-   ```bash
-   export CONNECTION_STRING="Host=localhost;Database=UnsecuredAPIKeys;Username=postgres;Password=your_password"
-   ```
-3. Start the API (applies migrations automatically):
-   ```bash
-   dotnet run --project UnsecuredAPIKeys.WebAPI
-   ```
-4. Start the bots:
-   ```bash
-   dotnet run --project UnsecuredAPIKeys.Bots.Scraper
-   dotnet run --project UnsecuredAPIKeys.Bots.Verifier
-   ```
-5. Build and serve the UI:
-   ```bash
-   cd UnsecuredAPIKeys.UI
-   npm install
-   NEXT_PUBLIC_API_URL=http://localhost:5000 npm run build:simple
-   npx serve out
-   ```
+# Quick Start
 
----
-
-## Deployment Tips
-
-**Single public URL:** port-forward `UI_PORT` (default `8080`). The nginx container serves the UI and proxies all `/apiproxy/*` calls to the API internally. You never need to expose the API port publicly.
-
-**TLS:** Terminate TLS in front of the nginx container (Cloudflare, your own nginx, Caddy, etc.) and set `FORCE_HTTPS_REDIRECT=1` in `.env`.
-
-**Domain:** Set `ALLOWED_REFERRERS=yourdomain.com` and `PRODUCTION_DOMAIN=yourdomain.com` in `.env`, then restart the API container.
-
-**Monitoring:** `GET /health` returns `{"status":"healthy","utc":"..."}` — wire this into your uptime monitor.
-
----
-
-## Project Structure
-
-```
-Insecured-API-Keys/
-├── UnsecuredAPIKeys.WebAPI/        # ASP.NET Core 9 REST API
-├── UnsecuredAPIKeys.UI/            # Next.js 14 frontend (static export)
-├── UnsecuredAPIKeys.Bots.Scraper/  # GitHub scraper worker
-├── UnsecuredAPIKeys.Bots.Verifier/ # Key validation worker
-├── UnsecuredAPIKeys.Data/          # EF Core models + migrations
-├── UnsecuredAPIKeys.Providers/     # Provider validation logic
-├── deploy/
-│   ├── nginx-ui.conf               # nginx config (UI + proxy + security headers)
-│   └── deploy.sh                   # Helper script (setup/build/logs/stop)
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
----
-
-## Contributing
-
-Pull requests are welcome. For major changes, open an issue first to discuss what you'd like to change.
+**Prerequisites:** Linux, Docker, and the Docker Compose plugin.
 
 ```bash
-# Fork and clone
 git clone https://github.com/vtrsharvin-sj/Insecured-API-Keys.git
 cd Insecured-API-Keys
 
-# Create a branch
-git checkout -b feature/my-feature
+# 1. Configure
+cp .env.example .env
+nano .env   # set POSTGRES_PASSWORD at minimum
 
-# Make changes, then commit
-git commit -m "Add my feature"
+# 2. Build and start
+docker compose up -d --build
 
-# Push and open a PR
-git push origin feature/my-feature
+# 3. Verify
+curl http://localhost:8081/health   # → {"status":"healthy"}
+curl http://localhost:8080          # → HTML
 ```
 
----
+The API applies all database migrations on first boot. No manual database setup is needed.
 
-## Support
+The UI is served on `UI_PORT` (default `8080`). That is the only port you need to expose publicly — the nginx container handles everything else internally.
 
-If this project is useful to you, consider [buying me a coffee](https://buymeacoffee.com/sharvinsj) ☕
+## Configuration
 
----
+All runtime configuration is done through environment variables in `.env`. Copy `.env.example` to get started.
 
-## License
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `POSTGRES_PASSWORD` | ✅ | `postgres` | **Change this.** Database password. |
+| `POSTGRES_USER` | | `postgres` | Database user |
+| `UI_PORT` | | `8080` | Host port for the full site — port-forward this one |
+| `API_PORT` | | `8081` | Host port for direct API access |
+| `ALLOWED_REFERRERS` | | — | Comma-separated domains allowed to call the API (e.g. `mysite.com`) |
+| `PRODUCTION_DOMAIN` | | — | Your domain — adds it to CORS allowed origins |
+| `ASPNETCORE_ENVIRONMENT` | | `Production` | Set to `Development` to enable Swagger at `/scalar/v1` |
+| `FORCE_HTTPS_REDIRECT` | | unset | Set to `1` if you terminate TLS in front of this stack |
+| `SCRAPER_CONTINUOUS_MODE` | | `true` | Loop the scraper every 10 minutes |
+| `VERIFIER_CONTINUOUS_MODE` | | `true` | Loop the verifier every 5 minutes |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | | — | Google Analytics 4 ID — leave blank to disable tracking |
 
-MIT — see [LICENSE](LICENSE).
+## Adding GitHub Tokens
 
-> This project builds on [UnsecuredAPIKeys-OpenSource](https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource) by TSCarterJr. Attribution is required by the original license.
+The scraper requires at least one GitHub personal access token with `public_repo` scope. Without it nothing gets scraped.
+
+**Option 1 — via the UI (recommended):**
+Go to the **About** page and click **Contribute a GitHub Token**. The token is validated against GitHub before saving. Invalid tokens are rejected immediately with a specific error message.
+
+**Option 2 — directly in the database:**
+```bash
+docker exec api-db psql -U postgres -d UnsecuredAPIKeys \
+  -c "INSERT INTO \"SearchProviderTokens\" (\"Token\", \"SearchProvider\", \"IsEnabled\", \"LastUsedUTC\") \
+      VALUES ('your_pat_here', 1, true, NULL);"
+```
+
+**Token rotation:** When a token hits GitHub's rate limit, the scraper records the exact reset time on that token and skips it on subsequent cycles until the reset time passes. No restarts or manual intervention needed.
+
+Create a token at [github.com/settings/tokens](https://github.com/settings/tokens/new?scopes=public_repo&description=InsecuredAPIKeys+Scraper) with `public_repo` scope.
+
+# API Reference
+
+Base URL when going through nginx: `http://your-server:8080/apiproxy`  
+Direct API: `http://your-server:8081`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Health check — `{"status":"healthy","utc":"..."}` |
+| GET | `/API/GetAllValidKeys` | Paginated key listing. Params: `page`, `pageSize`, `type` (int), `statusFilter=valid` |
+| GET | `/API/GetKeyStatistics` | Counts: total indexed, valid now, new today, fixed |
+| GET | `/API/GetKeyTypes` | Available key types with key counts |
+| GET | `/API/GetSnitchLeaderboard` | Top reporters. Param: `count` |
+| GET | `/API/GetLeaderboardStats` | Aggregate leaderboard statistics |
+| GET | `/API/GetPatternEffectiveness` | Search pattern success rates |
+| GET | `/API/GetInvalidationStats` | Key invalidation statistics |
+| GET | `/API/GetKeyRotations` | Recent key rotation events |
+| POST | `/API/TrackIssueSubmission` | Record a user flagging a key. Body: `{ApiKeyId, ApiType, RepoUrl, Timestamp}` |
+| POST | `/API/SubmitToken` | Contribute a GitHub PAT. Body: `{Token}` — validated before saving |
+| POST | `/API/webhook/key-fixed` | Mark a key as fixed. Body: `{KeyId, Reason}` |
+
+**Rate limiting:** `GetAllValidKeys` allows 500 requests/hour per IP. The nginx proxy forwards real client IPs so each user gets their own limit.
+
+# Contributing
+
+Contributions are welcome. If you want to add a new provider validator, improve the scraper patterns, or fix a bug:
+
+1. Fork the repository and create a feature branch (`git checkout -b feature/your-idea`).
+2. Make your changes. For new provider support, add a validator in `UnsecuredAPIKeys.Providers` and register the new `ApiTypeEnum` value in `CommonEnums.cs`.
+3. Test locally with `docker compose up -d --build`.
+4. Commit with a clear message and open a pull request describing what you changed and why.
+
+Bug reports and feature ideas are equally welcome — open an issue with as much detail as possible.
+
+# License
+
+This project is released under the [MIT License](LICENSE). You are free to use, modify, and distribute it; please keep the copyright notice intact.
+
+> Built on top of [UnsecuredAPIKeys-OpenSource](https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource) by TSCarterJr. Attribution is required by the original license.
