@@ -19,13 +19,13 @@ furnished to do so, subject to the following conditions:
    backend processes, algorithms, data structures, bots, validation logic, or any 
    other component) and provides a public-facing user interface MUST display a 
    prominent link to the original project repository: 
-   https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource
+   https://github.com/vtrsharvin-sj/Insecured-API-Keys.git
 
    This attribution must be:
    - Clearly visible in the user interface
    - Accessible from the main/home page or footer
    - Contain the text "Based on UnsecuredAPIKeys Open Source" or similar
-   - Link directly to https://github.com/TSCarterJr/UnsecuredAPIKeys-OpenSource
+   - Link directly to https://github.com/vtrsharvin-sj/Insecured-API-Keys.git
    
    This requirement applies regardless of the extent of modification, whether the
    entire codebase is used or only small portions, and whether the derivative work
