@@ -1,5 +1,4 @@
 // Google Analytics 4 utility functions for static export compatibility
-// This replaces @next/third-parties functionality with custom implementation
 
 declare global {
   interface Window {
@@ -8,21 +7,10 @@ declare global {
   }
 }
 
-// Hardcoded GA measurement ID for static export compatibility
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'YOUR_GA_MEASUREMENT_ID'
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''
 
-// Check if GA is properly loaded
 export const isGALoaded = (): boolean => {
-  const windowExists = typeof window !== 'undefined'
-  const gtagExists = windowExists && typeof window.gtag === 'function'
-  const isLoaded = windowExists && gtagExists
-  
-  // Log GA status for debugging
-  if (windowExists) {
-    console.log(`[GA] Status check - gtag exists: ${gtagExists}, loaded: ${isLoaded}`)
-  }
-  
-  return isLoaded
+  return typeof window !== 'undefined' && typeof window.gtag === 'function'
 }
 
 // Track page views

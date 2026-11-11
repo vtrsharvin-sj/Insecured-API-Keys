@@ -3,8 +3,7 @@ import * as Sentry from "@sentry/react";
 import { ApiResponse, RateLimitResponse } from "@/types";
 
 // API base URL from environment variables
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:7227";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/apiproxy";
 
 // Debug logging in development
 if (process.env.NODE_ENV === 'development') {
