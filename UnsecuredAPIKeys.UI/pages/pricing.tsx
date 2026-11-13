@@ -18,15 +18,15 @@ export default function PricingPage() {
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="keywords" content="pricing, free security tools, API key security, cost, GitHub security, free cybersecurity, developer tools" />
-        <link rel="canonical" href="https://InsecuredAPIKeys.com/pricing/" />
+        <link rel="canonical" href="https://insecuredapikeys.linkpc.net/pricing/" />
 
         {/* Open Graph Meta Tags */}
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Insecured API Keys" />
         <meta property="og:title" content="Pricing - Insecured API Keys" />
         <meta property="og:description" content="Our pricing is simple: completely free! Help secure the web without any cost. No hidden fees, no premium tiers." />
-        <meta property="og:url" content="https://InsecuredAPIKeys.com/pricing/" />
-        <meta property="og:image" content="https://InsecuredAPIKeys.com/og-image.png" />
+        <meta property="og:url" content="https://insecuredapikeys.linkpc.net/pricing/" />
+        <meta property="og:image" content="https://insecuredapikeys.linkpc.net/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="Pricing - Free Security Tools at Insecured API Keys" />
@@ -36,7 +36,7 @@ export default function PricingPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Pricing - Insecured API Keys" />
         <meta name="twitter:description" content="Our pricing is simple: completely free! Help secure the web without any cost." />
-        <meta name="twitter:image" content="https://InsecuredAPIKeys.com/og-image.png" />
+        <meta name="twitter:image" content="https://insecuredapikeys.linkpc.net/og-image.png" />
         <meta name="twitter:image:alt" content="Pricing - Free Security Tools at Insecured API Keys" />
 
         {/* Structured Data - Pricing */}
@@ -47,7 +47,7 @@ export default function PricingPage() {
               "@context": "https://schema.org",
               "@type": "WebPage",
               "name": "Pricing - Insecured API Keys",
-              "url": "https://InsecuredAPIKeys.com/pricing",
+              "url": "https://insecuredapikeys.linkpc.net/pricing",
               "description": "Our pricing is simple: completely free! Help secure the web without any cost.",
               "mainEntity": {
                 "@type": "Product",
