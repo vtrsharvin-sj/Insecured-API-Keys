@@ -20,8 +20,8 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     integrations: [],
     tracesSampleRate: parseFloat(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE || '0.1'),
     tracePropagationTargets: [
-      process.env.NEXT_PUBLIC_API_URL || "https://insecuredapikeys.linkpc.net",
-      "https://insecuredapikeys.linkpc.net",
+      process.env.NEXT_PUBLIC_API_URL || "https://insecuredapikeys.kz.ci",
+      "https://insecuredapikeys.kz.ci",
       "localhost",
     ],
     // Session Replay

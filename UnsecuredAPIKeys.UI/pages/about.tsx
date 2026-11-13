@@ -44,15 +44,15 @@ export default function AboutPage() {
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="keywords" content="about, mission, cybersecurity, API security, GitHub security, code vulnerability, security research" />
-        <link rel="canonical" href="https://insecuredapikeys.linkpc.net/about/" />
+        <link rel="canonical" href="https://insecuredapikeys.kz.ci/about/" />
         
         {/* Open Graph Meta Tags */}
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Insecured API Keys" />
         <meta property="og:title" content="About - Insecured API Keys" />
         <meta property="og:description" content="Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories." />
-        <meta property="og:url" content="https://insecuredapikeys.linkpc.net/about/" />
-        <meta property="og:image" content="https://insecuredapikeys.linkpc.net/og-image.png" />
+        <meta property="og:url" content="https://insecuredapikeys.kz.ci/about/" />
+        <meta property="og:image" content="https://insecuredapikeys.kz.ci/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="About Insecured API Keys - Security Tool for Developers" />
@@ -62,7 +62,7 @@ export default function AboutPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About - Insecured API Keys" />
         <meta name="twitter:description" content="Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories." />
-        <meta name="twitter:image" content="https://insecuredapikeys.linkpc.net/og-image.png" />
+        <meta name="twitter:image" content="https://insecuredapikeys.kz.ci/og-image.png" />
         <meta name="twitter:image:alt" content="About Insecured API Keys - Security Tool for Developers" />
         
         {/* Structured Data - About Page */}
@@ -73,13 +73,13 @@ export default function AboutPage() {
               "@context": "https://schema.org",
               "@type": "AboutPage",
               "name": "About Insecured API Keys",
-              "url": "https://insecuredapikeys.linkpc.net/about",
+              "url": "https://insecuredapikeys.kz.ci/about",
               "description": "Learn about our mission to help secure the web by finding and reporting exposed API keys in public repositories.",
               "mainEntity": {
                 "@type": "Organization",
                 "name": "Insecured API Keys",
                 "description": "A security tool that helps developers find and report exposed API keys in public repositories.",
-                "url": "https://insecuredapikeys.linkpc.net"
+                "url": "https://insecuredapikeys.kz.ci"
               }
             })
           }}
