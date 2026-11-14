@@ -60,7 +60,13 @@ namespace UnsecuredAPIKeys.Providers.Search_Providers
                         if (page == 1)
                         {
                             query.SearchResultsCount = searchResult.TotalCount;
-                            dbContext.SearchQueries.Update(query);
+                            // Use Entry to avoid tracking conflicts when the same entity
+                            // is tracked by the scraper's outer scope
+                            var entry = dbContext.Entry(query);
+                            if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+                                dbContext.SearchQueries.Update(query);
+                            else
+                                entry.Property(q => q.SearchResultsCount).IsModified = true;
                             await dbContext.SaveChangesAsync();
                         }
                     }
